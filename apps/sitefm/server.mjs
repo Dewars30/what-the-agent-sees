@@ -2,12 +2,15 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { analyze, HttpError } from '../../core/page.mjs';
-import { shell, esc } from '../../core/kit.mjs';
+import { analyze, HttpError } from './core/page.mjs';
+import { shell, esc } from './core/kit.mjs';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
-const PORT = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT || 8080);
 const APP = process.env.PUBLIC_ORIGIN || 'https://sitefm.synteq.app';
+const ENTRY = process.env.ENTRY_TWEET_ID || '';
+const intent = (text, reply) =>
+  'https://x.com/intent/post?text=' + encodeURIComponent(text) + (reply && ENTRY ? '&in_reply_to=' + ENTRY : '');
 
 function hash(s) {
   let h = 2166136261;
@@ -35,7 +38,16 @@ function compose(r) {
   if (h2s.length) {
     for (const h of h2s) sections[('x')] = null;
   }
-  const list = p.headings.filter((h) => h.level <= 3).slice(0, 6);
+  const seen = new Set();
+  const list = p.headings
+    .filter((h) => h.level <= 3)
+    .filter((h) => {
+      const k = h.text.toLowerCase().slice(0, 28);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    })
+    .slice(0, 6);
   const per = list.length ? Math.max(1, Math.round(bodyWords / list.length)) : bodyWords;
   const totalLinks = p.links.length;
   const perLinks = list.length ? Math.max(0, Math.round(totalLinks / list.length)) : totalLinks;
@@ -102,7 +114,8 @@ function compose(r) {
 
 function player(r) {
   const piece = compose(r);
-  const share = encodeURIComponent(`Here is what ${piece.host} sounds like.\n\nEvery heading is a melody, every link a beat, every missing alt text a silence.\n\n${APP}/?url=${encodeURIComponent(piece.url)}`);
+  const shareText = `Here is what ${piece.host} sounds like.\n\nEvery heading is a melody, every link a beat, every missing alt text a silence.\n\n${APP}/?url=${encodeURIComponent(piece.url)}`;
+  const grokText = `${piece.host} is in ${piece.key} at ${piece.bpm} BPM, composed from ${piece.words} words of its own HTML. @grok what genre is this website\n\n${APP}/?url=${encodeURIComponent(piece.url)}`;
   return shell({
     title: `${piece.host} — Site FM`,
     description: `${piece.host}, composed from its own HTML: ${piece.bars} bars, ${piece.key}, ${piece.bpm} BPM.`,
@@ -120,7 +133,8 @@ function player(r) {
       <button id="play" class="play">▶ Play</button>
       <button id="stop" class="btn">Stop</button>
       <span class="legend"><i class="lk"></i>headings <i class="lk l2"></i>links <i class="lk l3"></i>images <i class="lk l4"></i>forms</span>
-      <a class="btn" target="_blank" rel="noopener" href="https://x.com/intent/tweet?text=${share}">Share this track</a>
+      <a class="btn" target="_blank" rel="noopener" href="${intent(shareText, false)}">Share this track</a>
+      <a class="btn" target="_blank" rel="noopener" href="${intent(grokText, true)}">Ask @grok the genre</a>
     </div>
   </section>
   <section class="grid3" style="margin-top:26px">
@@ -176,7 +190,25 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const send = (code, type, body) => { res.writeHead(code, { 'content-type': type, 'cache-control': 'no-store' }); res.end(body); };
   if (url.pathname === '/healthz') return send(200, 'text/plain', 'ok');
-  if (url.pathname === '/robots.txt') return send(200, 'text/plain', 'User-agent: *\nAllow: /\n');
+  if (url.pathname === '/robots.txt') return send(200, 'text/plain', 'User-agent: *\nAllow: /\nSitemap: ' + APP + '/sitemap.xml\n');
+  if (url.pathname === '/llms.txt') return send(200, 'text/plain; charset=utf-8', `# Site FM
+
+> Site FM composes a webpage into music. Headings up to H3 become bars, heading level sets the register, word count sets note density, links become off-beat clicks, forms drop a chord, and images with no alt text become sustained pads and silences.
+
+The composition is a pure function of the document: no samples, no model, no randomness. The same URL produces the same track every time.
+
+## Use
+- ${APP}/?url=<url> renders a playable score for any public page
+- ${APP}/about explains the mapping
+- Audio is generated in the browser with WebAudio; nothing is uploaded
+
+## Quotable
+- Most modern websites sound like a pleasant pentatonic loop, which is a depressing thing to learn about modern web structure.
+- Every image with no alt text is rendered as silence, because to an agent that is what it is.
+
+Source: https://github.com/Dewars30/what-the-agent-sees (MIT)
+`);
+  if (url.pathname === '/sitemap.xml') return send(200, 'application/xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${APP}/</loc></url><url><loc>${APP}/about</loc></url></urlset>`);
   if (url.pathname === '/app.js') return send(200, 'text/javascript; charset=utf-8', fs.readFileSync(path.join(__dir, 'public', 'app.js')));
   if (url.pathname === '/about') return send(200, 'text/html; charset=utf-8', shell({
     title: 'About — Site FM', description: 'How a page becomes a track.', nav: false,

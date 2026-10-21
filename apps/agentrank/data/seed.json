@@ -1,0 +1,2515 @@
+{
+  "generated": "2026-10-21T08:01:20.470Z",
+  "rows": [
+    {
+      "slug": "netlify.com",
+      "name": "Netlify",
+      "url": "https://netlify.com/",
+      "score": 89,
+      "grade": "B",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 7800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 8500
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 10000
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 8900
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [],
+      "warns": [
+        {
+          "title": "Meta description is mis-sized",
+          "detail": "102 characters. Agents truncate long ones and skim short ones.",
+          "fix": "Aim for 120-160 characters: what this is, who it is for, what to do next."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "Many links share the same text",
+          "detail": "46 duplicates.",
+          "fix": "Distinguish repeated links with aria-label."
+        }
+      ],
+      "tlDr": "netlify.com scores 89/100 for agents. No blockers found.",
+      "words": 954,
+      "fetchedAt": "2026-10-21T08:01:03.913Z",
+      "ok": true,
+      "rank": 1
+    },
+    {
+      "slug": "fly.io",
+      "name": "Fly.io",
+      "url": "https://fly.io/",
+      "score": 86,
+      "grade": "B",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 7500
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 10000
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 7300
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "7 of 29 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        },
+        {
+          "title": "1 link say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "Many links share the same text",
+          "detail": "39 duplicates.",
+          "fix": "Distinguish repeated links with aria-label."
+        }
+      ],
+      "tlDr": "fly.io scores 86/100 for agents. Blockers: 7 of 29 images have no alt text; 1 link say \"here\" or \"learn more\".",
+      "words": 616,
+      "fetchedAt": "2026-10-21T08:01:03.688Z",
+      "ok": true,
+      "rank": 2
+    },
+    {
+      "slug": "runpod.io",
+      "name": "RunPod",
+      "url": "https://runpod.io/",
+      "score": 86,
+      "grade": "B",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 9000
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 10000
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 8200
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 5000
+        }
+      ],
+      "fails": [
+        {
+          "title": "3 of 70 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        },
+        {
+          "title": "1 link say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        }
+      ],
+      "tlDr": "runpod.io scores 86/100 for agents. Blockers: 3 of 70 images have no alt text; 1 link say \"here\" or \"learn more\".",
+      "words": 1473,
+      "fetchedAt": "2026-10-21T08:01:18.562Z",
+      "ok": true,
+      "rank": 3
+    },
+    {
+      "slug": "heroku.com",
+      "name": "Heroku",
+      "url": "https://heroku.com/",
+      "score": 85,
+      "grade": "B",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 6000
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 10000
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 7500
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "9 of 35 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        }
+      ],
+      "tlDr": "heroku.com scores 85/100 for agents. Blockers: 9 of 35 images have no alt text.",
+      "words": 1083,
+      "fetchedAt": "2026-10-21T08:01:07.518Z",
+      "ok": true,
+      "rank": 4
+    },
+    {
+      "slug": "supabase.com",
+      "name": "Supabase",
+      "url": "https://supabase.com/",
+      "score": 84,
+      "grade": "B",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 9500
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 7500
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 10000
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 8500
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 5000
+        }
+      ],
+      "fails": [
+        {
+          "title": "6 of 57 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        }
+      ],
+      "warns": [
+        {
+          "title": "1 heading level jump",
+          "detail": "Skipping from H2 straight to H4 breaks the outline an agent reconstructs.",
+          "fix": "Do not skip levels."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        }
+      ],
+      "tlDr": "supabase.com scores 84/100 for agents. Blockers: 6 of 57 images have no alt text.",
+      "words": 1108,
+      "fetchedAt": "2026-10-21T08:01:17.995Z",
+      "ok": true,
+      "rank": 5
+    },
+    {
+      "slug": "railway.com",
+      "name": "Railway",
+      "url": "https://railway.com/",
+      "score": 83,
+      "grade": "B",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 7500
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 7500
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 7400
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "29 of 60 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No forms on the page",
+          "detail": "There is nothing here an agent can fill in on your behalf.",
+          "fix": "If there is a next step, expose it as a real form."
+        }
+      ],
+      "tlDr": "railway.com scores 83/100 for agents. Blockers: 29 of 60 images have no alt text.",
+      "words": 1000,
+      "fetchedAt": "2026-10-21T08:01:03.621Z",
+      "ok": true,
+      "rank": 6
+    },
+    {
+      "slug": "firebase.google.com",
+      "name": "Firebase",
+      "url": "https://firebase.google.com/",
+      "score": 83,
+      "grade": "B",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 8500
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 7500
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 10000
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 8600
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 7700
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "1 link say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "1 heading level jump",
+          "detail": "Skipping from H2 straight to H4 breaks the outline an agent reconstructs.",
+          "fix": "Do not skip levels."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "Many links share the same text",
+          "detail": "79 duplicates.",
+          "fix": "Distinguish repeated links with aria-label."
+        },
+        {
+          "title": "No /llms.txt",
+          "detail": "The emerging convention for telling an LLM what your site is and where the important pages are.",
+          "fix": "Add a short /llms.txt with title, summary and key links."
+        }
+      ],
+      "tlDr": "firebase.google.com scores 83/100 for agents. Blockers: 1 link say \"here\" or \"learn more\".",
+      "words": 456,
+      "fetchedAt": "2026-10-21T08:01:20.273Z",
+      "ok": true,
+      "rank": 7
+    },
+    {
+      "slug": "synteq.com",
+      "name": "Synteq",
+      "url": "https://synteq.com/",
+      "score": 81,
+      "grade": "B",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 9500
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 9000
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 7500
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 7500
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 5000
+        }
+      ],
+      "fails": [
+        {
+          "title": "43 of 100 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No <nav> element",
+          "detail": "Navigation is likely a pile of divs.",
+          "fix": "Wrap link groups in <nav>."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No forms on the page",
+          "detail": "There is nothing here an agent can fill in on your behalf.",
+          "fix": "If there is a next step, expose it as a real form."
+        }
+      ],
+      "tlDr": "synteq.com scores 81/100 for agents. Blockers: 43 of 100 images have no alt text.",
+      "words": 992,
+      "fetchedAt": "2026-10-21T08:01:03.857Z",
+      "ok": true,
+      "rank": 8
+    },
+    {
+      "slug": "cloudflare.com",
+      "name": "Cloudflare",
+      "url": "https://cloudflare.com/",
+      "score": 78,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 7700
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 7800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 7500
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 6000
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 8500
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "1 of 68 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        },
+        {
+          "title": "2 links say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "2 H1s competing",
+          "detail": "When everything is the most important thing, nothing is.",
+          "fix": "Keep one <h1>; demote the rest to <h2>."
+        },
+        {
+          "title": "5 heading level jumps",
+          "detail": "Skipping from H2 straight to H4 breaks the outline an agent reconstructs.",
+          "fix": "Do not skip levels."
+        },
+        {
+          "title": "Meta description is mis-sized",
+          "detail": "68 characters. Agents truncate long ones and skim short ones.",
+          "fix": "Aim for 120-160 characters: what this is, who it is for, what to do next."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        }
+      ],
+      "tlDr": "cloudflare.com scores 78/100 for agents. Blockers: 1 of 68 images have no alt text; 2 links say \"here\" or \"learn more\".",
+      "words": 940,
+      "fetchedAt": "2026-10-21T08:01:10.285Z",
+      "ok": true,
+      "rank": 9
+    },
+    {
+      "slug": "modal.com",
+      "name": "Modal",
+      "url": "https://modal.com/",
+      "score": 77,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 7800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 6000
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 7500
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 5400
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "11 of 11 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        },
+        {
+          "title": "6 links say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "Meta description is mis-sized",
+          "detail": "87 characters. Agents truncate long ones and skim short ones.",
+          "fix": "Aim for 120-160 characters: what this is, who it is for, what to do next."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No forms on the page",
+          "detail": "There is nothing here an agent can fill in on your behalf.",
+          "fix": "If there is a next step, expose it as a real form."
+        },
+        {
+          "title": "Many links share the same text",
+          "detail": "35 duplicates.",
+          "fix": "Distinguish repeated links with aria-label."
+        }
+      ],
+      "tlDr": "modal.com scores 77/100 for agents. Blockers: 11 of 11 images have no alt text; 6 links say \"here\" or \"learn more\".",
+      "words": 950,
+      "fetchedAt": "2026-10-21T08:01:18.582Z",
+      "ok": true,
+      "rank": 10
+    },
+    {
+      "slug": "vercel.com",
+      "name": "Vercel",
+      "url": "https://vercel.com/",
+      "score": 76,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 7800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 7500
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 10000
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 7300
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 1200
+        }
+      ],
+      "fails": [
+        {
+          "title": "3 of 17 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        }
+      ],
+      "warns": [
+        {
+          "title": "Meta description is mis-sized",
+          "detail": "45 characters. Agents truncate long ones and skim short ones.",
+          "fix": "Aim for 120-160 characters: what this is, who it is for, what to do next."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "Many links share the same text",
+          "detail": "67 duplicates.",
+          "fix": "Distinguish repeated links with aria-label."
+        },
+        {
+          "title": "Content is thin before JS",
+          "detail": "229 words in the raw HTML.",
+          "fix": "Server-render the parts that matter."
+        }
+      ],
+      "tlDr": "vercel.com scores 76/100 for agents. Blockers: 3 of 17 images have no alt text.",
+      "words": 229,
+      "fetchedAt": "2026-10-21T08:01:03.660Z",
+      "ok": true,
+      "rank": 11
+    },
+    {
+      "slug": "scaleway.com",
+      "name": "Scaleway",
+      "url": "https://www.scaleway.com/",
+      "score": 76,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 7800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 8500
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 7500
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 7300
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 7700
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 5000
+        }
+      ],
+      "fails": [
+        {
+          "title": "19 of 31 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        }
+      ],
+      "warns": [
+        {
+          "title": "Meta description is mis-sized",
+          "detail": "90 characters. Agents truncate long ones and skim short ones.",
+          "fix": "Aim for 120-160 characters: what this is, who it is for, what to do next."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No forms on the page",
+          "detail": "There is nothing here an agent can fill in on your behalf.",
+          "fix": "If there is a next step, expose it as a real form."
+        },
+        {
+          "title": "No /llms.txt",
+          "detail": "The emerging convention for telling an LLM what your site is and where the important pages are.",
+          "fix": "Add a short /llms.txt with title, summary and key links."
+        }
+      ],
+      "tlDr": "scaleway.com scores 76/100 for agents. Blockers: 19 of 31 images have no alt text.",
+      "words": 769,
+      "fetchedAt": "2026-10-21T08:01:11.266Z",
+      "ok": true,
+      "rank": 12
+    },
+    {
+      "slug": "lambda.ai",
+      "name": "Lambda",
+      "url": "https://lambda.ai/",
+      "score": 76,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 9200
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 4400
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 7500
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 6300
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "3 of 8 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        },
+        {
+          "title": "4 links say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "2 H1s competing",
+          "detail": "When everything is the most important thing, nothing is.",
+          "fix": "Keep one <h1>; demote the rest to <h2>."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No forms on the page",
+          "detail": "There is nothing here an agent can fill in on your behalf.",
+          "fix": "If there is a next step, expose it as a real form."
+        },
+        {
+          "title": "Many links share the same text",
+          "detail": "69 duplicates.",
+          "fix": "Distinguish repeated links with aria-label."
+        }
+      ],
+      "tlDr": "lambda.ai scores 76/100 for agents. Blockers: 3 of 8 images have no alt text; 4 links say \"here\" or \"learn more\".",
+      "words": 704,
+      "fetchedAt": "2026-10-21T08:01:10.295Z",
+      "ok": true,
+      "rank": 13
+    },
+    {
+      "slug": "render.com",
+      "name": "Render",
+      "url": "https://render.com/",
+      "score": 73,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 7500
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 6400
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 7900
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 1200
+        }
+      ],
+      "fails": [
+        {
+          "title": "10 of 54 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No forms on the page",
+          "detail": "There is nothing here an agent can fill in on your behalf.",
+          "fix": "If there is a next step, expose it as a real form."
+        },
+        {
+          "title": "Content is thin before JS",
+          "detail": "221 words in the raw HTML.",
+          "fix": "Server-render the parts that matter."
+        },
+        {
+          "title": "Script weight dwarfs the copy",
+          "detail": "270 bytes of inline script per word of content.",
+          "fix": "Move logic out of the document."
+        }
+      ],
+      "tlDr": "render.com scores 73/100 for agents. Blockers: 10 of 54 images have no alt text.",
+      "words": 221,
+      "fetchedAt": "2026-10-21T08:01:03.829Z",
+      "ok": true,
+      "rank": 14
+    },
+    {
+      "slug": "together.ai",
+      "name": "Together AI",
+      "url": "https://together.ai/",
+      "score": 73,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 6000
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 4700
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 4900
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "224 of 231 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        },
+        {
+          "title": "90 links say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No forms on the page",
+          "detail": "There is nothing here an agent can fill in on your behalf.",
+          "fix": "If there is a next step, expose it as a real form."
+        },
+        {
+          "title": "No buttons found",
+          "detail": "Nothing on this page is clickable in a way an agent can name.",
+          "fix": "Render real <button> elements."
+        },
+        {
+          "title": "Many links share the same text",
+          "detail": "148 duplicates.",
+          "fix": "Distinguish repeated links with aria-label."
+        }
+      ],
+      "tlDr": "together.ai scores 73/100 for agents. Blockers: 224 of 231 images have no alt text; 90 links say \"here\" or \"learn more\".",
+      "words": 2735,
+      "fetchedAt": "2026-10-21T08:01:18.507Z",
+      "ok": true,
+      "rank": 15
+    },
+    {
+      "slug": "azure.microsoft.com",
+      "name": "Azure",
+      "url": "https://azure.microsoft.com/",
+      "score": 72,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8200
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 0
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 10000
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 7100
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 7700
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 6000
+        }
+      ],
+      "fails": [
+        {
+          "title": "No schema.org data at all",
+          "detail": "Everything an agent learns about your business, it has to infer from prose.",
+          "fix": "Add a JSON-LD block with Organization and the page's primary type."
+        },
+        {
+          "title": "62 of 104 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "Open Graph tags are incomplete",
+          "detail": "2 of 3 present.",
+          "fix": "Add the missing og: tags."
+        },
+        {
+          "title": "No /llms.txt",
+          "detail": "The emerging convention for telling an LLM what your site is and where the important pages are.",
+          "fix": "Add a short /llms.txt with title, summary and key links."
+        },
+        {
+          "title": "72 external scripts",
+          "detail": "Each one is a chance for the page to arrive broken.",
+          "fix": "Audit third-party tags."
+        }
+      ],
+      "tlDr": "azure.microsoft.com scores 72/100 for agents. Blockers: no schema.org data at all; 62 of 104 images have no alt text.",
+      "words": 1665,
+      "fetchedAt": "2026-10-21T08:01:06.580Z",
+      "ok": true,
+      "rank": 16
+    },
+    {
+      "slug": "northflank.com",
+      "name": "Northflank",
+      "url": "https://northflank.com/",
+      "score": 72,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 0
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 7500
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 8200
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 7700
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "No schema.org data at all",
+          "detail": "Everything an agent learns about your business, it has to infer from prose.",
+          "fix": "Add a JSON-LD block with Organization and the page's primary type."
+        },
+        {
+          "title": "12 of 59 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No forms on the page",
+          "detail": "There is nothing here an agent can fill in on your behalf.",
+          "fix": "If there is a next step, expose it as a real form."
+        },
+        {
+          "title": "No /llms.txt",
+          "detail": "The emerging convention for telling an LLM what your site is and where the important pages are.",
+          "fix": "Add a short /llms.txt with title, summary and key links."
+        }
+      ],
+      "tlDr": "northflank.com scores 72/100 for agents. Blockers: no schema.org data at all; 12 of 59 images have no alt text.",
+      "words": 882,
+      "fetchedAt": "2026-10-21T08:01:19.848Z",
+      "ok": true,
+      "rank": 17
+    },
+    {
+      "slug": "coolify.io",
+      "name": "Coolify",
+      "url": "https://coolify.io/",
+      "score": 71,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 0
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 7500
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 5700
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "No schema.org data at all",
+          "detail": "Everything an agent learns about your business, it has to infer from prose.",
+          "fix": "Add a JSON-LD block with Organization and the page's primary type."
+        },
+        {
+          "title": "9 of 10 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        },
+        {
+          "title": "1 link say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No forms on the page",
+          "detail": "There is nothing here an agent can fill in on your behalf.",
+          "fix": "If there is a next step, expose it as a real form."
+        },
+        {
+          "title": "Many links share the same text",
+          "detail": "21 duplicates.",
+          "fix": "Distinguish repeated links with aria-label."
+        }
+      ],
+      "tlDr": "coolify.io scores 71/100 for agents. Blockers: no schema.org data at all; 9 of 10 images have no alt text.",
+      "words": 779,
+      "fetchedAt": "2026-10-21T08:01:20.470Z",
+      "ok": true,
+      "rank": 18
+    },
+    {
+      "slug": "hetzner.com",
+      "name": "Hetzner",
+      "url": "https://hetzner.com/",
+      "score": 70,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 6400
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 0
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 6900
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 9500
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 7700
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "No schema.org data at all",
+          "detail": "Everything an agent learns about your business, it has to infer from prose.",
+          "fix": "Add a JSON-LD block with Organization and the page's primary type."
+        },
+        {
+          "title": "1 link say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No twitter:card tag",
+          "detail": "Unfurls in X fall back to a bare link.",
+          "fix": "Add twitter:card = summary_large_image."
+        },
+        {
+          "title": "No Open Graph tags",
+          "detail": "Every unfurl of this page is blank.",
+          "fix": "Add og:title, og:description, og:image."
+        },
+        {
+          "title": "2 inputs with no label",
+          "detail": "An agent filling your form sees a box with no name. It will guess, or refuse.",
+          "fix": "Give every input a <label for>."
+        }
+      ],
+      "tlDr": "hetzner.com scores 70/100 for agents. Blockers: no schema.org data at all; 1 link say \"here\" or \"learn more\".",
+      "words": 606,
+      "fetchedAt": "2026-10-21T08:01:09.263Z",
+      "ok": true,
+      "rank": 19
+    },
+    {
+      "slug": "aws.amazon.com",
+      "name": "AWS",
+      "url": "https://aws.amazon.com/",
+      "score": 70,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8200
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 2000
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 6600
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 8400
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 7700
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 5000
+        }
+      ],
+      "fails": [
+        {
+          "title": "5 of 30 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "Open Graph tags are incomplete",
+          "detail": "2 of 3 present.",
+          "fix": "Add the missing og: tags."
+        },
+        {
+          "title": "JSON-LD is present but not useful",
+          "detail": "Blocks exist, none of them say what the entity is.",
+          "fix": "Use schema.org Organization, WebSite, Product or FAQPage."
+        },
+        {
+          "title": "4 inputs with no label",
+          "detail": "An agent filling your form sees a box with no name. It will guess, or refuse.",
+          "fix": "Give every input a <label for>."
+        }
+      ],
+      "tlDr": "aws.amazon.com scores 70/100 for agents. Blockers: 5 of 30 images have no alt text.",
+      "words": 644,
+      "fetchedAt": "2026-10-21T08:01:05.935Z",
+      "ok": true,
+      "rank": 20
+    },
+    {
+      "slug": "deno.com",
+      "name": "Deno",
+      "url": "https://deno.com/",
+      "score": 70,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 0
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 6000
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 7900
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 7800
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "No schema.org data at all",
+          "detail": "Everything an agent learns about your business, it has to infer from prose.",
+          "fix": "Add a JSON-LD block with Organization and the page's primary type."
+        },
+        {
+          "title": "13 of 39 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        },
+        {
+          "title": "1 link say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "3 inputs with no label",
+          "detail": "An agent filling your form sees a box with no name. It will guess, or refuse.",
+          "fix": "Give every input a <label for>."
+        },
+        {
+          "title": "No sitemap found",
+          "detail": "Agents discover by crawling. Give them the map.",
+          "fix": "Publish /sitemap.xml and reference it in robots.txt."
+        }
+      ],
+      "tlDr": "deno.com scores 70/100 for agents. Blockers: no schema.org data at all; 13 of 39 images have no alt text.",
+      "words": 1422,
+      "fetchedAt": "2026-10-21T08:01:20.070Z",
+      "ok": true,
+      "rank": 21
+    },
+    {
+      "slug": "sevalla.com",
+      "name": "Sevalla",
+      "url": "https://sevalla.com/",
+      "score": 70,
+      "grade": "C",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 0
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 7300
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 9000
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 7700
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 5000
+        }
+      ],
+      "fails": [
+        {
+          "title": "No schema.org data at all",
+          "detail": "Everything an agent learns about your business, it has to infer from prose.",
+          "fix": "Add a JSON-LD block with Organization and the page's primary type."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No forms on the page",
+          "detail": "There is nothing here an agent can fill in on your behalf.",
+          "fix": "If there is a next step, expose it as a real form."
+        },
+        {
+          "title": "Many links share the same text",
+          "detail": "29 duplicates.",
+          "fix": "Distinguish repeated links with aria-label."
+        },
+        {
+          "title": "No /llms.txt",
+          "detail": "The emerging convention for telling an LLM what your site is and where the important pages are.",
+          "fix": "Add a short /llms.txt with title, summary and key links."
+        }
+      ],
+      "tlDr": "sevalla.com scores 70/100 for agents. Blockers: no schema.org data at all.",
+      "words": 471,
+      "fetchedAt": "2026-10-21T08:01:19.554Z",
+      "ok": true,
+      "rank": 22
+    },
+    {
+      "slug": "ovhcloud.com",
+      "name": "OVHcloud",
+      "url": "https://www.ovhcloud.com/",
+      "score": 68,
+      "grade": "D",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 5600
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 4400
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 7500
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 9300
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 3200
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 6000
+        }
+      ],
+      "fails": [
+        {
+          "title": "2 links say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        },
+        {
+          "title": "16 AI crawlers are disallowed",
+          "detail": "Blocked: gptbot, oai-searchbot, chatgpt-user, claudebot, claude-web…. Your site is invisible to those agents by choice.",
+          "fix": "If you want agent traffic, allow the ones you care about explicitly."
+        }
+      ],
+      "warns": [
+        {
+          "title": "Title length is off",
+          "detail": "8 characters. Agents truncate around 65 and skip short titles.",
+          "fix": "Aim for 15-65 characters that name the product and the page."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No twitter:card tag",
+          "detail": "Unfurls in X fall back to a bare link.",
+          "fix": "Add twitter:card = summary_large_image."
+        },
+        {
+          "title": "Open Graph tags are incomplete",
+          "detail": "1 of 3 present.",
+          "fix": "Add the missing og: tags."
+        }
+      ],
+      "tlDr": "us.ovhcloud.com scores 68/100 for agents. Blockers: 2 links say \"here\" or \"learn more\"; 16 ai crawlers are disallowed.",
+      "words": 1709,
+      "fetchedAt": "2026-10-21T08:01:11.197Z",
+      "ok": true,
+      "rank": 23
+    },
+    {
+      "slug": "coreweave.com",
+      "name": "CoreWeave",
+      "url": "https://www.coreweave.com/",
+      "score": 68,
+      "grade": "D",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 6000
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 3200
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 6900
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 7700
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 5000
+        }
+      ],
+      "fails": [
+        {
+          "title": "43 of 52 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        },
+        {
+          "title": "1 link say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "1 input with no label",
+          "detail": "An agent filling your form sees a box with no name. It will guess, or refuse.",
+          "fix": "Give every input a <label for>."
+        },
+        {
+          "title": "No buttons found",
+          "detail": "Nothing on this page is clickable in a way an agent can name.",
+          "fix": "Render real <button> elements."
+        },
+        {
+          "title": "No /llms.txt",
+          "detail": "The emerging convention for telling an LLM what your site is and where the important pages are.",
+          "fix": "Add a short /llms.txt with title, summary and key links."
+        }
+      ],
+      "tlDr": "coreweave.com scores 68/100 for agents. Blockers: 43 of 52 images have no alt text; 1 link say \"here\" or \"learn more\".",
+      "words": 664,
+      "fetchedAt": "2026-10-21T08:01:18.574Z",
+      "ok": true,
+      "rank": 24
+    },
+    {
+      "slug": "koyeb.com",
+      "name": "Koyeb",
+      "url": "https://www.koyeb.com/",
+      "score": 67,
+      "grade": "D",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 10000
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 6400
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 0
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 7500
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 9000
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 7700
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 5000
+        }
+      ],
+      "fails": [
+        {
+          "title": "No schema.org data at all",
+          "detail": "Everything an agent learns about your business, it has to infer from prose.",
+          "fix": "Add a JSON-LD block with Organization and the page's primary type."
+        },
+        {
+          "title": "5 links say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "Title length is off",
+          "detail": "73 characters. Agents truncate around 65 and skip short titles.",
+          "fix": "Aim for 15-65 characters that name the product and the page."
+        },
+        {
+          "title": "Meta description is mis-sized",
+          "detail": "102 characters. Agents truncate long ones and skim short ones.",
+          "fix": "Aim for 120-160 characters: what this is, who it is for, what to do next."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No forms on the page",
+          "detail": "There is nothing here an agent can fill in on your behalf.",
+          "fix": "If there is a next step, expose it as a real form."
+        }
+      ],
+      "tlDr": "koyeb.com scores 67/100 for agents. Blockers: no schema.org data at all; 5 links say \"here\" or \"learn more\".",
+      "words": 882,
+      "fetchedAt": "2026-10-21T08:01:19.876Z",
+      "ok": true,
+      "rank": 25
+    },
+    {
+      "slug": "linode.com",
+      "name": "Akamai (Linode)",
+      "url": "https://www.linode.com/",
+      "score": 66,
+      "grade": "D",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 9500
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 7200
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 0
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 7400
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 5900
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 7700
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 7000
+        }
+      ],
+      "fails": [
+        {
+          "title": "No schema.org data at all",
+          "detail": "Everything an agent learns about your business, it has to infer from prose.",
+          "fix": "Add a JSON-LD block with Organization and the page's primary type."
+        },
+        {
+          "title": "14 of 17 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        },
+        {
+          "title": "1 link say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "1 heading level jump",
+          "detail": "Skipping from H2 straight to H4 breaks the outline an agent reconstructs.",
+          "fix": "Do not skip levels."
+        },
+        {
+          "title": "Meta description is mis-sized",
+          "detail": "82 characters. Agents truncate long ones and skim short ones.",
+          "fix": "Aim for 120-160 characters: what this is, who it is for, what to do next."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No twitter:card tag",
+          "detail": "Unfurls in X fall back to a bare link.",
+          "fix": "Add twitter:card = summary_large_image."
+        }
+      ],
+      "tlDr": "linode.com scores 66/100 for agents. Blockers: no schema.org data at all; 14 of 17 images have no alt text.",
+      "words": 634,
+      "fetchedAt": "2026-10-21T08:01:17.276Z",
+      "ok": true,
+      "rank": 26
+    },
+    {
+      "slug": "cloud.google.com",
+      "name": "Google Cloud",
+      "url": "https://cloud.google.com/",
+      "score": 63,
+      "grade": "D",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 7500
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8800
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 0
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 10000
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 5500
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 2500
+        }
+      ],
+      "fails": [
+        {
+          "title": "No <main> landmark",
+          "detail": "Without it, an agent has to guess which of the 40 divs is the content and which is the cookie banner.",
+          "fix": "Wrap primary content in <main>."
+        },
+        {
+          "title": "No schema.org data at all",
+          "detail": "Everything an agent learns about your business, it has to infer from prose.",
+          "fix": "Add a JSON-LD block with Organization and the page's primary type."
+        },
+        {
+          "title": "49 of 102 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        },
+        {
+          "title": "2 links say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "1 heading level jump",
+          "detail": "Skipping from H2 straight to H4 breaks the outline an agent reconstructs.",
+          "fix": "Do not skip levels."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        }
+      ],
+      "tlDr": "cloud.google.com scores 63/100 for agents. Blockers: no <main> landmark; no schema.org data at all.",
+      "words": 0,
+      "fetchedAt": "2026-10-21T08:01:07.507Z",
+      "ok": true,
+      "rank": 27
+    },
+    {
+      "slug": "replicate.com",
+      "name": "Replicate",
+      "url": "https://replicate.com/",
+      "score": 60,
+      "grade": "D",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 7500
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 6000
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 0
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 8500
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 7100
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 10000
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 2500
+        }
+      ],
+      "fails": [
+        {
+          "title": "No <main> landmark",
+          "detail": "Without it, an agent has to guess which of the 40 divs is the content and which is the cookie banner.",
+          "fix": "Wrap primary content in <main>."
+        },
+        {
+          "title": "No schema.org data at all",
+          "detail": "Everything an agent learns about your business, it has to infer from prose.",
+          "fix": "Add a JSON-LD block with Organization and the page's primary type."
+        },
+        {
+          "title": "1 link say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        },
+        {
+          "title": "Almost no text content",
+          "detail": "About 0 words.",
+          "fix": "If the copy is inside an image or a canvas, agents never see it."
+        }
+      ],
+      "warns": [
+        {
+          "title": "1 heading level jump",
+          "detail": "Skipping from H2 straight to H4 breaks the outline an agent reconstructs.",
+          "fix": "Do not skip levels."
+        },
+        {
+          "title": "Meta description is mis-sized",
+          "detail": "56 characters. Agents truncate long ones and skim short ones.",
+          "fix": "Aim for 120-160 characters: what this is, who it is for, what to do next."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "No twitter:card tag",
+          "detail": "Unfurls in X fall back to a bare link.",
+          "fix": "Add twitter:card = summary_large_image."
+        }
+      ],
+      "tlDr": "replicate.com scores 60/100 for agents. Blockers: no <main> landmark; no schema.org data at all.",
+      "words": 0,
+      "fetchedAt": "2026-10-21T08:01:18.702Z",
+      "ok": true,
+      "rank": 28
+    },
+    {
+      "slug": "digitalocean.com",
+      "name": "DigitalOcean",
+      "url": "https://digitalocean.com/",
+      "score": 54,
+      "grade": "E",
+      "dims": [
+        {
+          "key": "structure",
+          "label": "Structure",
+          "weight": 16,
+          "score": 7500
+        },
+        {
+          "key": "facts",
+          "label": "Machine-readable facts",
+          "weight": 14,
+          "score": 8200
+        },
+        {
+          "key": "schema",
+          "label": "Structured data",
+          "weight": 12,
+          "score": 0
+        },
+        {
+          "key": "actions",
+          "label": "Actionability",
+          "weight": 14,
+          "score": 7500
+        },
+        {
+          "key": "legibility",
+          "label": "Legibility to agents",
+          "weight": 16,
+          "score": 5400
+        },
+        {
+          "key": "access",
+          "label": "Entry & permission",
+          "weight": 12,
+          "score": 7700
+        },
+        {
+          "key": "render",
+          "label": "Content without JavaScript",
+          "weight": 16,
+          "score": 1500
+        }
+      ],
+      "fails": [
+        {
+          "title": "No <main> landmark",
+          "detail": "Without it, an agent has to guess which of the 40 divs is the content and which is the cookie banner.",
+          "fix": "Wrap primary content in <main>."
+        },
+        {
+          "title": "No schema.org data at all",
+          "detail": "Everything an agent learns about your business, it has to infer from prose.",
+          "fix": "Add a JSON-LD block with Organization and the page's primary type."
+        },
+        {
+          "title": "8 of 32 images have no alt text",
+          "detail": "To an agent, those are holes in the page. Diagrams, screenshots and charts are just voids.",
+          "fix": "Describe every meaningful image in alt."
+        },
+        {
+          "title": "1 link say \"here\" or \"learn more\"",
+          "detail": "Out of context, that text means nothing. An agent reading the link list cannot tell where any of them go.",
+          "fix": "Name the destination: \"Read the pricing docs\", not \"learn more\"."
+        }
+      ],
+      "warns": [
+        {
+          "title": "1 heading level jump",
+          "detail": "Skipping from H2 straight to H4 breaks the outline an agent reconstructs.",
+          "fix": "Do not skip levels."
+        },
+        {
+          "title": "No canonical URL",
+          "detail": "Duplicate paths make agents cite the wrong page.",
+          "fix": "Add <link rel=\"canonical\">."
+        },
+        {
+          "title": "Open Graph tags are incomplete",
+          "detail": "2 of 3 present.",
+          "fix": "Add the missing og: tags."
+        },
+        {
+          "title": "No forms on the page",
+          "detail": "There is nothing here an agent can fill in on your behalf.",
+          "fix": "If there is a next step, expose it as a real form."
+        }
+      ],
+      "tlDr": "digitalocean.com scores 54/100 for agents. Blockers: no <main> landmark; no schema.org data at all.",
+      "words": 0,
+      "fetchedAt": "2026-10-21T08:01:06.204Z",
+      "ok": true,
+      "rank": 29
+    },
+    {
+      "slug": "vultr.com",
+      "name": "Vultr",
+      "url": "https://www.vultr.com/",
+      "score": 0,
+      "grade": "F",
+      "ok": false,
+      "error": "www.vultr.com answered 403. Nothing to read.",
+      "fetchedAt": "2026-10-21T08:01:09.694Z",
+      "rank": 30
+    }
+  ]
+}

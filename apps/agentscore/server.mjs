@@ -2,12 +2,15 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { analyze, HttpError } from '../../core/page.mjs';
-import { shell, esc } from '../../core/kit.mjs';
+import { analyze, HttpError } from './core/page.mjs';
+import { shell, esc } from './core/kit.mjs';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
-const PORT = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT || 8080);
 const APP = process.env.PUBLIC_ORIGIN || 'https://agentscore.synteq.app';
+const ENTRY = process.env.ENTRY_TWEET_ID || '';
+const intent = (text, reply) =>
+  'https://x.com/intent/post?text=' + encodeURIComponent(text) + (reply && ENTRY ? '&in_reply_to=' + ENTRY : '');
 
 function loadIndex() {
   try {
@@ -38,23 +41,28 @@ function findingRow(f) {
     <h4><span class="tag ${f.level}">${label}</span>${esc(f.title)}</h4>
     <p>${esc(f.detail)}</p>
     ${f.fix ? `<p class="fix">→ ${esc(f.fix)}</p>` : ''}
+    ${f.worth ? `<p class="worth">worth up to +${f.worth} pts</p>` : ''}
   </div>`;
 }
 
 function resultView(r, rawInput) {
   const { scored, page } = r;
-  const share = encodeURIComponent(
-    `${page.host} scores ${scored.score}/100 for AI agents: ${scored.verdict}.\n\nScore yours: ${APP}`
-  );
+  const shareText = `${page.host} scores ${scored.score}/100 for AI agents: ${scored.verdict}.\n\nScore yours: ${APP}`;
+  const grokText = `${page.host} scores ${scored.score}/100 on how usable it is to an AI agent, with ${scored.fails.length} blockers. @grok verify this\n\nscored by ${APP}/?url=${encodeURIComponent(page.url)}`;
   const dims = scored.dims
-    .map(
-      (d) => `<div class="dim"><span class="lbl">${esc(d.label)}</span>
-      <span class="bar"><i style="width:${d.score}%"></i></span><span class="val">${d.score}</span></div>`
-    )
+    .map((d) => {
+      const tone = d.score >= 70 ? 'var(--acid)' : d.score >= 45 ? 'var(--amber)' : 'var(--red)';
+      return `<div class="dim"><span class="lbl">${esc(d.label)}</span>
+      <span class="bar"><i style="width:${d.score}%;background:${tone}"></i></span><span class="val">${d.score}</span></div>`;
+    })
     .join('');
   const order = { fail: 0, warn: 1, ok: 2 };
-  const findings = [...scored.findings].sort((a, b) => order[a.level] - order[b.level]).slice(0, 16);
+  const findings = [...scored.findings]
+    .sort((a, b) => order[a.level] - order[b.level] || (b.worth || 0) - (a.worth || 0))
+    .slice(0, 16);
   const fails = scored.fails.length;
+  const topThree = [...scored.findings].filter((f) => f.level !== 'ok').sort((a, b) => (b.worth || 0) - (a.worth || 0)).slice(0, 3);
+  const recoverable = topThree.reduce((n, f) => n + (f.worth || 0), 0);
 
   return shell({
     title: `${page.host} — ${scored.score}/100 · AgentScore`,
@@ -83,11 +91,13 @@ function resultView(r, rawInput) {
       </div>
       <div class="col">
         <div class="kicker">${fails} blocker${fails === 1 ? '' : 's'} · ${scored.warns.length} weak spot${scored.warns.length === 1 ? '' : 's'}</div>
+        <p class="muted small" style="margin:8px 0 0">Fix the top three and the score moves about <span class="mono" style="color:var(--acid)">+${recoverable}</span>.</p>
         <div style="margin-top:14px">${findings.map(findingRow).join('')}</div>
       </div>
     </div>
     <div class="actions">
-      <a class="btn primary" target="_blank" rel="noopener" href="https://x.com/intent/tweet?text=${share}">Post my score</a>
+      <a class="btn primary" target="_blank" rel="noopener" href="${intent(shareText, false)}">Post my score</a>
+      <a class="btn" target="_blank" rel="noopener" href="${intent(grokText, true)}">Ask @grok to check it</a>
       <a class="btn" href="/?url=${encodeURIComponent(page.url)}">Rescan</a>
       <a class="btn" href="/">Check another site</a>
       <a class="btn" href="/method">How this is scored</a>
@@ -117,6 +127,58 @@ function resultView(r, rawInput) {
   });
 }
 
+function blockedView(r, rawInput) {
+  const { blocked, page } = r;
+  const shareText = `${blocked.host} answered a machine with ${blocked.status === 200 ? 'a bot check' : 'HTTP ' + blocked.status}. To an AI agent that is a 0/100.\n\n${APP}`;
+  const grokText = `${blocked.host} refuses to serve a non-browser client, so it scores 0/100 for AI agents. @grok is blocking agents now a strategy or an accident\n\n${APP}/?url=${encodeURIComponent('https://' + blocked.host)}`;
+  return shell({
+    title: `${blocked.host} — 0/100 · AgentScore`,
+    description: `${blocked.host} does not serve a readable page to a client that is not a browser. To an agent, that is a zero.`,
+    body: `<main>
+  <p class="kicker" style="margin:34px 0 0">Report · the site declined to be read</p>
+  <section class="card" style="margin-top:12px">
+    <div class="scorewrap">
+      <div><div class="scorenum" data-target="0">0<span class="of">/100</span></div><div class="grade">Grade F</div></div>
+      <div>
+        <div class="kicker">Verdict</div>
+        <div class="verdict">Invisible</div>
+        <div class="ticks">${ticks(0)}</div>
+        <div class="hostline">${esc(blocked.host)} · ${esc(blocked.reason)}</div>
+      </div>
+    </div>
+    <div class="cols">
+      <div class="col">
+        <div class="kicker">What the agent receives</div>
+        <pre class="agent">url: https://${esc(blocked.host)}/
+title: (none)
+description: (none)
+lang: (unset)  headings: 0  links: 0  forms: 0  images: 0
+
+[main]
+  (nothing. the server declined.)</pre>
+      </div>
+      <div class="col">
+        <div class="kicker">Why this is a zero, not an error</div>
+        <div style="margin-top:14px">
+          <div class="finding fail"><h4><span class="tag fail">Blocker</span>The page never arrived</h4>
+          <p>We sent one plain HTTP request with an honest user agent. ${esc(blocked.reason)} Whatever is behind that gate may be excellent, and no agent will ever cite it.</p>
+          <p class="fix">→ If you want agent traffic, serve a readable fallback and put the important facts in it.</p></div>
+          <div class="finding warn"><h4><span class="tag warn">Context</span>This is often deliberate</h4>
+          <p>Bot protection exists for real reasons: scraping, cost, abuse. The trade is that retrieval systems, assistants and agents also get the door, and they do not come back later.</p>
+          <p class="fix">→ /llms.txt and structured data cost nothing even when the HTML stays behind a gate.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <a class="btn primary" target="_blank" rel="noopener" href="${intent(shareText, false)}">Post this</a>
+      <a class="btn" target="_blank" rel="noopener" href="${intent(grokText, true)}">Ask @grok about it</a>
+      <a class="btn" href="/">Check another site</a>
+    </div>
+  </section>
+</main>`,
+  });
+}
+
 function landing(err) {
   const idx = loadIndex();
   const top = idx.rows.slice(0, 5);
@@ -142,7 +204,7 @@ function landing(err) {
     <div><div class="kicker">Deterministic</div><p class="muted small" style="margin:8px 0 0">No model in the scoring path. Seven weighted dimensions, every point traced to a check you can fix today.</p></div>
     <div><div class="kicker">Seven dimensions</div><p class="muted small" style="margin:8px 0 0">Structure, machine facts, structured data, actionability, legibility, entry &amp; permission, and how much content exists without JavaScript.</p></div>
   </section>
-  ${top.length ? `<section class="card pad" style="margin-top:4px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div class="kicker">Lowest scores on the index</div><a class="kicker" href="/index" style="text-decoration:none;color:var(--acid)">All ${idx.rows.length} →</a></div>
+  ${top.length ? `<section class="card pad" style="margin-top:4px"><div style="display:flex;justify-content:space-between;align-items:baseline"><div class="kicker">Top of the index</div><a class="kicker" href="/index" style="text-decoration:none;color:var(--acid)">All ${idx.rows.length} →</a></div>
   <table class="idx" style="margin-top:14px">${rows}</table></section>` : ''}
 </main>
 <script>document.querySelectorAll('[data-u]').forEach(b=>b.addEventListener('click',()=>{const i=document.querySelector('input[name=url]');i.value=b.dataset.u;i.form.submit();}));</script>`,
@@ -210,7 +272,32 @@ const server = http.createServer(async (req, res) => {
   };
   try {
     if (url.pathname === '/healthz') return send(200, 'text/plain', 'ok');
-    if (url.pathname === '/robots.txt') return send(200, 'text/plain', 'User-agent: *\nAllow: /\n');
+    if (url.pathname === '/robots.txt') return send(200, 'text/plain', 'User-agent: *\nAllow: /\nSitemap: ' + APP + '/sitemap.xml\n');
+    if (url.pathname === '/llms.txt') {
+      const idx = loadIndex();
+      const board = idx.rows.map((r) => `${r.host}: ${r.score}/100 (${r.verdict})`).join('\n');
+      return send(200, 'text/plain; charset=utf-8', `# AgentScore
+  
+> AgentScore measures whether a software agent can actually read and act on a website. One HTTP request, one HTML parse, seven weighted dimensions, no language model in the scoring path.
+
+## What it reports
+- A 0-100 score and a verdict for any URL: ${APP}/?url=<url>
+- The exact structure an agent receives (headings, link text, form labels, alt text, JSON-LD)
+- Every point is traceable to a check: ${APP}/method
+
+## The agent-readability index (${idx.rows.length} developer homepages, measured with the same code)
+${board}
+
+## Facts you can cite
+- DigitalOcean's homepage returns 0 words of content to a client that does not run JavaScript (score 54/100).
+- Of 22 cloud and developer-tool homepages measured, the median score is around 75 and the best is netlify.com at 89.
+- A page with no server-rendered text cannot be read by most agents, scrapers and retrieval pipelines.
+
+## Scope
+Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking; scanned pages are not stored.
+`);
+    }
+    if (url.pathname === '/sitemap.xml') return send(200, 'application/xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${APP}/</loc></url><url><loc>${APP}/index</loc></url><url><loc>${APP}/method</loc></url></urlset>`);
     if (url.pathname === '/method') return send(200, 'text/html; charset=utf-8', methodView());
     if (url.pathname === '/index') return send(200, 'text/html; charset=utf-8', indexView());
     if (url.pathname === '/api/scan') {
@@ -223,6 +310,7 @@ const server = http.createServer(async (req, res) => {
       if (!target) return send(200, 'text/html; charset=utf-8', landing());
       try {
         const r = await analyze(target);
+        if (r.blocked) return send(200, 'text/html; charset=utf-8', blockedView(r, target));
         return send(200, 'text/html; charset=utf-8', resultView(r, target));
       } catch (e) {
         const err = e instanceof HttpError ? e : new HttpError(500, 'Something broke while scanning that page.');

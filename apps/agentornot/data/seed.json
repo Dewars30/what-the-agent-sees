@@ -1,0 +1,221 @@
+{
+  "generated": "2026-10-21T08:05:14.976Z",
+  "sites": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/",
+      "cat": "dev",
+      "score": 65,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 26   links: 135   forms: 2   images: 24\n\n[headings]\n## Navigation Menu\n# The future of building happens together\n## ██████ features\n## ██████ customers\n## Accelerate your entire workflow\n### Your AI partner everywhere. Copilot is ready to work with you at each \n### Automate your path to production\n### Code instantly from anywhere\n\n[links] Homepage · Sign in · ██████ CopilotWrite better code with AI · MCP RegistryIntegrate external tools · ActionsAutomate any workflow · CodespacesInstant dev environments · IssuesPlan and track work · Code ReviewManage code changes · Code QualityEnforce quality at merge\n\n[main text]\nThe future of building happens together Tools and trends evolve, but collaboration endures. With ██████, developers, agents, and code come together on one platform. Enter your email Sign up for ██████ Download ██████ Copilot app ██████ features A demonstration animation of a code editor using ██████ Copilot Chat, where the user requests ██████ Copilot to refactor duplicated logic and extract it into a reusable function for a given code snippet. Code Plan Collaborate Automate Secure Code Write, test, and fix code quickly with ██████ Copilot, from simple boilerplate to complex features. ██████ customers Accelerate your entire workflow From your first line of code to final deployment, ██████ pr",
+      "ok": true
+    },
+    {
+      "name": "Hacker News",
+      "url": "https://news.ycombinator.com/",
+      "cat": "dev",
+      "score": 23,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 0   links: 230   forms: 1   images: 2\n\n[links] ███████████ · new · past · comments · ask · show · jobs · submit · login\n",
+      "ok": true
+    },
+    {
+      "name": "GitLab",
+      "url": "https://gitlab.com/",
+      "cat": "dev",
+      "score": 76,
+      "puzzle": "── what the agent received ──\nlang: en-US   headings: 32   links: 188   forms: 0   images: 39\n\n[headings]\n# Speed you can trust, all the way to production\n## Securing the software factory at machine speed\n## What's new in ██████\n## Ship faster. Stay in control.\n### Define how teams and AI agents work together\n### Your end-to-end delivery process in one place\n### Be proactive with security built in, not bolted on\n### Commit once, adjust anytime with flexible pricing\n\n[links] ██████.com · ██████ Duo Agent Platform · Code Suggestions (AI) · CI/CD · ██████ on AWS · ██████ on Google Cloud · Why ██████? · Home · CI/CD · Source Code Management\n\n[main text]\nSpeed you can trust, all the way to production Agentic software engineering for your team Try for free Blog Securing the software factory at machine speed 19.5 What's new in ██████ Build with ██████ Ship faster. Stay in control. AI orchestration Define how teams and AI agents work together Teams orchestrate, agents execute, turning issues into merge requests, remediating vulnerabilities, and reviewing code, all inside the guardrails you set. Learn about ██████ Duo Platform Your end-to-end delivery process in one place Planning, source control, and CI/CD in one platform. Projects, releases, and code share one data plane, so your team and agents work from a single source of truth. Explore our ",
+      "ok": true
+    },
+    {
+      "name": "DEV Community",
+      "url": "https://dev.to/",
+      "cat": "dev",
+      "score": 60,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 32   links: 374   forms: 1   images: 104\n\n[headings]\n## ████████████\n## ████████████ is a █████████ of 4,162,235 amazing ███elopers\n## Other\n### Popular Tags\n# Posts\n#### Channel your inner sloth. 🦥\n## Join the Hacktoberfest Open-Source AI Challenge: Slow and Steady! $2,8\n## Promise Delivered: Welcome to the ███ Hall of Fame (65 Authors, 65 Mas\n\n[links] ████████████ Home · Powered by Algolia · Log in · Create account · Create new account · Log in · Home · ███ Challenges · ███++ · Videos\n\n[main text]\nPosts Relevant Latest Top 🚀 ███ Challenges What's a billboard? Manage preferences Report billboard Channel your inner sloth. 🦥 International Sloth Day is October 20. Celebrate with an open-source AI build that does the work so you don't have to. Join the Hacktoberfest Open-Source AI Challenge: Slow and Steady! $2,850 in Prizes Across 21 Winners. Jem Jem Jem Follow for The ███ Team Oct 19 Join the Hacktoberfest Open-Source AI Challenge: Slow and Steady! $2,850 in Prizes Across 21 Winners. #███challenge#hf26challenge#hacktoberfest#productivity 5 reactions Add Comment 7 min read Promise Delivered: Welcome to the ███ Hall of Fame (65 Authors, 65 Masterpieces) Over 10 hours of reading behind it",
+      "ok": true
+    },
+    {
+      "name": "Wikipedia",
+      "url": "https://en.wikipedia.org/",
+      "cat": "info",
+      "score": 70,
+      "puzzle": "── what the ag██t received ──\nlang: ██   headings: 12   links: 661   forms: 2   images: 22\n\n[headings]\n# Main Page\n# Welcome to █████████\n## From today's featured article\n## Did you know...\n## Help us improve this article!\n## In the news\n## On this day\n## From today's featured list\n\n[links] Main page · Cont██ts · Curr██t ev██ts · Random article · About █████████ · Contact us · Help · Learn to edit · Community portal · Rec██t changes\n\n[main text]\nMain Page Main Page Talk ██glish Read View source View history Tools Tools move to sidebar hide Actions Read View source View history G██eral What links here Related changes Upload file Perman██t link Page information Cite this page Get short██ed URL Switch to legacy parser Print/export Download as PDF Printable version In other projects Abstract █████████ Wikimedia Commons Wikimedia Foundation MediaWiki Meta-Wiki Wikimedia Outreach Multilingual Wikisource Wikispecies Wikibooks Wikidata Wikifunctions Wikimania Wikinews Wikiquote Wikisource Wikiversity Wikivoyage Wiktionary Wikidata item Appearance move to sidebar hide From █████████, the free ██cyclopedia Welcome to █████████ , the free ██cy",
+      "ok": true
+    },
+    {
+      "name": "arXiv",
+      "url": "https://arxiv.org/",
+      "cat": "info",
+      "score": 64,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 9   links: 256   forms: 2   images: 4\n\n[headings]\n## Physics\n## Mathematics\n## Computer Science\n## Quantitative Biology\n## Quantitative Finance\n## Statistics\n## Electrical Engineering and Systems Science\n## Economics\n\n[links] archive home · Search · Submit · Donate · Log in · Advanced search · Astrophysics · new · recent\n\n[main text]\n█████ is a free distribution service and an open-access archive for more than 3.2 million scholarly articles in the fields of physics, mathematics, computer science, quantitative biology, quantitative finance, statistics, electrical engineering and systems science, and economics. Materials on this site are not peer-reviewed by █████. Subject search and browse: Physics Mathematics Quantitative Biology Computer Science Quantitative Finance Statistics Electrical Engineering and Systems Science Economics Physics Astrophysics (astro-phnew, recent, search) Astrophysics of Galaxies; Cosmology and Nongalactic Astrophysics; Earth and Planetary Astrophysics; High Energy Astrophysical Phenomena; Instru",
+      "ok": true
+    },
+    {
+      "name": "Rotten Tomatoes",
+      "url": "https://www.rottentomatoes.com/",
+      "cat": "info",
+      "score": 63,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 35   links: 339   forms: 0   images: 24\n\n[headings]\n## How Street Fighter (1994) Created a Cult Favorite Character\n## Weekend Box Office: Street Fighter Delivers a Knockout\n## The Hunger Games Movies Ranked by Tomatometer\n## Slashers and Monsters and Gore, Oh My\n## The Votes Are In\n## Street Fighter First Reviews\n## Women in Focus\n## Watch These Free Movies\n\n[links] ████████████ · About ████████████® · Critics · Movies · Movies in theaters · Opening This Week · Top Box Office · Coming Soon to Theaters · Certified Fresh Movies · Movies at Home\n\n[main text]\nHow Street Fighter (1994) Created a Cult Favorite Character Behold the strange legend of Captain Sawada Weekend Box Office: Street Fighter Delivers a Knockout You Can See Everything also racks up big numbers The Hunger Games Movies Ranked by Tomatometer Watch all five for free now on Fandango! Slashers and Monsters and Gore, Oh My Which horror subgenre is the best? The Votes Are In Presented by Kinder Bueno and chosen by YOU! Street Fighter First Reviews Colorful, weird, noisy nonsense affectionately made for fans Women in Focus Daisy Edgar-Jones says the film will offer something new. Watch These Free Movies Stream for free. No login required. Spooky Season Starts Here Your ultimate Hallowe",
+      "ok": true
+    },
+    {
+      "name": "Genius",
+      "url": "https://genius.com/",
+      "cat": "info",
+      "score": 69,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 45   links: 103   forms: 1   images: 0\n\n[headings]\n## Doechii Releases New Swamp Session Track “CATWOMAN”\n## Megan Thee Stallion Drops New Song “Thin Ice”\n## Is JAŸ-Z Headlining The Super Bowl LXI Halftime Show?\n## Virtual Girl Group K/DA Return With New Song “FIRESTARTER”\n## Charts\n### Housewife Lyrics\n#### Tate McRae\n### Nicole Kidman Lyrics\n\n[links] Living Tracklist · Get Verified · Charts · Videos · Promote Your Music\n\n[main text]\nnews Doechii Releases New Swamp Session Track “CATWOMAN” It follows last week’s “BOMBS.” by Ken PartridgeOct. 20, 2026 news Megan Thee Stallion Drops New Song “Thin Ice” by Ken PartridgeOct. 20, 2026 news Is JAŸ-Z Headlining The Super Bowl LXI Halftime Show? by Ken PartridgeOct. 20, 2026 news Virtual Girl Group K/DA Return With New Song “FIRESTARTER” by Ken PartridgeOct. 20, 2026 Charts Songs / All Genres / Today Type Songs Albums Artists Lyrics Genre All Rap Electronic Rock Country R&B Pop Time Day Week Month All Time 1 Housewife Lyrics Tate McRae 538.9K 2 Nicole Kidman Lyrics ADÉLA 1.2M 3 Alfaaz Lyrics Hamza Malik & Zain Zohaib 528.2K 4 Creep Lyrics Radiohead 14.4M 5 The Sky Under the Sea ",
+      "ok": true
+    },
+    {
+      "name": "NOAA Weather",
+      "url": "https://www.weather.gov/",
+      "cat": "info",
+      "score": 41,
+      "puzzle": "── what the agent received ──\nlang: (unset)   headings: 1   links: 111   forms: 3   images: 12\n\n[headings]\n# Nor'easter Bringing Dangerous Coastal Conditions to the Mid-Atlantic; \n\n[links] ████████████ · United States Department of Commerce · FORECAST · Local · Graphical · Aviation · Marine · Rivers and Lakes · Hurricanes\n",
+      "ok": true
+    },
+    {
+      "name": "BBC",
+      "url": "https://www.bbc.com/",
+      "cat": "news",
+      "score": 66,
+      "puzzle": "── what the agent received ──\nlang: en-GB   headings: 157   links: 234   forms: 0   images: 137\n\n[headings]\n## US envoy arrives in Russia ahead of meeting with Putin as Zelensky say\n## Trump and Zelensky appear at loggerheads despite Oslo optimism\n## Attacked Australian MP had both legs amputated, says husband\n## ███ inside Australian court as man charged with attacking MP stays sil\n## Katya Adler: France divided over who to blame for riots and what to le\n## Borneo burning: Life on the frontline of South East Asia's toxic haze\n## Lawyer caught offering to make illegal-worker fine go away\n## Only from the ███\n\n[links] Watch Live · Home · News · Sport · Business · Technology · Health · Culture · Arts\n\n[main text]\nUS envoy arrives in Russia ahead of meeting with Putin as Zelensky says intelligence sharing 'works now' Steve Witkoff is in St Petersburg to discuss proposals on ending Russia's years-long conflict with Ukraine. 1 hr ago Europe Trump and Zelensky appear at loggerheads despite Oslo optimism The Ukrainian leader's hug with Steve Witkoff in the Norwegian capital is unlikely to dispel misgivings about US policy towards his country, writes Paul Adams. 12 hrs ago Europe Attacked Australian MP had both legs amputated, says husband Phil Haines tells reporters that the \"good news\" is that Helen Haines is \"alive and stable\". ███ inside Australian court as man charged with attacki",
+      "ok": true
+    },
+    {
+      "name": "CNN",
+      "url": "https://www.cnn.com/",
+      "cat": "news",
+      "score": 30,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 0   links: 0   forms: 0   images: 0\n",
+      "ok": true
+    },
+    {
+      "name": "The Guardian",
+      "url": "https://www.theguardian.com/",
+      "cat": "news",
+      "score": 66,
+      "puzzle": "── what ███ agent received ──\nlang: en   headings: 208   links: 359   forms: 2   images: 0\n\n[headings]\n### Picture essay Life for Iranians on ███ strait of Hormuz\n### ‘A difficult line’ Meet ███ editors tackling Wikipedia’s arms trade pa\n### Rafael Behr Stir chaos, promise order: how rightwing populists win\n### Norway Can one of ███ fastest-warming places on Earth be saved?\n### Rebecca Solnit Americans, this is your chance to slap down ███ tech br\n### Serbia Student movement will try to take power this weekend\n## News\n### Climate crisis World must cut emissions by 18% in four years ‘to find \n\n[links] Print subscriptions · Newsletters · Sign in · US edition\n\n[main text]\nNews Hide <source srcSet=\"https://i.guim.co.uk/img/media/906ae4f75c9a82db2a25fe1cdf7e4d956abc60ad/503_0_5678_4543/master/5678.jpg?width=620&amp;dpr=2&amp;s=none&amp;crop=5%3A4\" media=\"(min-width: 980px) and (-webkit-min-device-pixel-ratio: 1.25), (min-width: 980px) and (min-resolution: 120dpi)\"/><source srcSet=\"https://i.guim.co.uk/img/media/906ae4f75c9a82db2a25fe1cdf7e4d956abc60ad/503_0_5678_4543/master/5678.jpg?width=620&amp;dpr=1&amp;s=none&amp;crop=5%3A4\" media=\"(min-width: 980px)\"/><source srcSet=\"https://i.guim.co.uk/img/media/906ae4f75c9a82db2a25fe1cdf7e4d956abc60ad/503_0_5678_4543/master/5678.jpg?width=460&amp;dpr=2&amp;s=none&amp;crop=5%3A4\" media=\"(min-width: 740px) and (-webkit-mi",
+      "ok": true
+    },
+    {
+      "name": "X (Twitter)",
+      "url": "https://x.com/",
+      "cat": "social",
+      "score": 50,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 2   links: 21   forms: 1   images: 0\n\n[headings]\n# Happening now.\n# See what’s happening\n\n[links] Continue with phone · Continue with Google · Continue with Apple · Terms of Service · Privacy Policy · Cookie Use. · Sign in · About · Get App · Grok\n",
+      "ok": true
+    },
+    {
+      "name": "Instagram",
+      "url": "https://www.instagram.com/",
+      "cat": "social",
+      "score": 30,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 0   links: 18   forms: 1   images: 3\n\n[links] Forgot password? · Create new account · Meta · About · Blog · Jobs · Help · API · Privacy · Consumer Health Privacy\n",
+      "ok": true
+    },
+    {
+      "name": "Tumblr",
+      "url": "https://www.tumblr.com/",
+      "cat": "social",
+      "score": 46,
+      "puzzle": "── what the agent received ──\nlang: en-US   headings: 0   links: 13   forms: 1   images: 0\n\n[links] Home · Explore · Communities · Trending · Staff Picks · Videos · About · Apps · Legal · Privacy\n\n[main text]\nTrending Staff Picks Videos More",
+      "ok": true
+    },
+    {
+      "name": "Walmart",
+      "url": "https://www.walmart.com/",
+      "cat": "shop",
+      "score": 64,
+      "puzzle": "── what the agent received ──\nlang: en-US   headings: 1   links: 51   forms: 1   images: 13\n\n[headings]\n# ███████ | Save Money. Live better.\n\n[links] All Departments Menu · ███████ Homepage · ███████ Homepage · Reorder My Items · Reorder · Lists · Registries · Sign In Account · Sign in or create account · Purchase History\n\n[main text]\n███████ | Save Money. Live better. Get ███████+ with Sam's Club Plus for just $120/year! Join nowJoin now Fall decor for every doorstep Find your front porch style Shop nowShop now Serveware, decor, fashion & more Feeling festive Shop nowShop now Premium autumn prep Stylish kitchen upgrades Shop nowShop now Fall flavors from bettergoods Shop nowShop now Mums & more from $7.97 Shop nowShop now 0% APR options with OnePay Later *Subject to eligibility. Learn moreLearn more Match as a family! Iconic Toy Story costumes Shop nowShop now",
+      "ok": true
+    },
+    {
+      "name": "Craigslist",
+      "url": "https://craigslist.org/",
+      "cat": "shop",
+      "score": 50,
+      "puzzle": "── what the agent received ──\nlang: (unset)   headings: 22   links: 451   forms: 0   images: 0\n\n[headings]\n## palm springs, CA\n# ██████████\n#### event calendar\n### community\n### services\n### discussion forums\n### housing\n### for sale\n\n[links] CL · palm springs · post · account · CL · new posting · my account · post an ad · event calendar · 21\n",
+      "ok": true
+    },
+    {
+      "name": "Best Buy",
+      "url": "https://www.bestbuy.com/",
+      "cat": "shop",
+      "score": 53,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 7   links: 79   forms: 1   images: 18\n\n[headings]\n## Order & Purchases\n## Payment Options\n## Support & Services\n## Rewards & Membership\n## Partnerships\n## About ████████\n## Get the latest deals and more.\n\n[links] Explore · ████████ home · cart, 0 items · Visit our Support Center · Check your Order Status · Shipping, Delivery & Store Pickup · Returns & Exchanges · Price Match Guarantee\n\n[main text]\n. <source src=\"https://res.cloudinary.com/bby-product/video/upload/v1792178704/8cfa97d4aa2cbd88c19b342daac50bc1.mp4\" type=\"video/mp4\"> Explore . . Sign in for free shipping*, recommendations, easy order tracking and more. *Exclusions apply. Learn more. Sign in Create an account . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+      "ok": true
+    },
+    {
+      "name": "Apple",
+      "url": "https://www.apple.com/",
+      "cat": "product",
+      "score": 78,
+      "puzzle": "── what the agent received ──\nlang: en-US   headings: 23   links: 133   forms: 1   images: 0\n\n[headings]\n# █████\n## iPhone Duo\n## iPhone 18 Pro\n## <source data-empty=\"\" srcset=\"data:image/gif;base64,R0lGODlhAQABAHAAAC\n### <source data-empty=\"\" srcset=\"data:image/gif;base64,R0lGODlhAQABAHAAAC\n### <source data-empty=\"\" srcset=\"data:image/gif;base64,R0lGODlhAQABAHAAAC\n### <source data-empty=\"\" srcset=\"data:image/gif;base64,R0lGODlhAQABAHAAAC\n### <source data-empty=\"\" srcset=\"data:image/gif;base64,R0lGODlhAQABAHAAAC\n\n[links] █████ · Store · Mac · iPad · iPhone · Watch · Vision · AirPods · Home · Entertainment\n\n[main text]\niPhone Duo Hello, hello.Hello, Hello. hello. Available starting 10.23 Learn morePre-order <source srcset=\"/v/homepage/images/iphone-duo/a/hero_iphone_duo_animated_startframe__blm9gj3ulmc2_small.jpg, /v/homepage/images/iphone-duo/a/hero_iphone_duo_animated_startframe__blm9gj3ulmc2_small_2x.jpg 2x\" media=\"(max-width:734px)\" /> <source srcset=\"/v/homepage/images/iphone-duo/a/hero_iphone_duo_animated_startframe__blm9gj3ulmc2_mediumtall.jpg, /v/homepage/images/iphone-duo/a/hero_iphone_duo_animated_startframe__blm9gj3ulmc2_mediumtall_2x.jpg 2x\" media=\"(max-width:1068px) and (min-height:734px)\" /> <source srcset=\"/v/homepage/images/iphone-duo/a/hero_iphone_duo_animated_startframe__blm9gj3ulmc2_medi",
+      "ok": true
+    },
+    {
+      "name": "Netflix",
+      "url": "https://www.netflix.com/",
+      "cat": "product",
+      "score": 50,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 17   links: 22   forms: 0   images: 2\n\n[headings]\n# Unlimited movies, TV shows, and more\n### Ready to watch? Enter your email to create or restart your membership.\n### The ███████ you love for just $8.99.\n## Trending Now\n## More Reasons to Join\n### Enjoy on your TV\n### Download your shows to watch offline\n### Watch everywhere\n\n[links] Sign In · 1-844-569-7700 · FAQ · Help Center · Account · ███████ House · Media Center · Investor Relations · Jobs · ███████ Shop\n",
+      "ok": true
+    },
+    {
+      "name": "Airbnb",
+      "url": "https://www.airbnb.com/",
+      "cat": "product",
+      "score": 63,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 6   links: 154   forms: 1   images: 0\n\n[headings]\n# ██████ homepage\n## Inspiration for future getaways\n## Site Footer\n### Support\n### Hosting\n### ██████\n\n[links] ██████ homepage · Help Center · Refer a Host · Find a co-host · Gift cards\n",
+      "ok": true
+    },
+    {
+      "name": "Uber",
+      "url": "https://www.uber.com/",
+      "cat": "product",
+      "score": 62,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 52   links: 160   forms: 0   images: 22\n\n[headings]\n# Go anywhere\n# Go anywhere\n# Go anywhere\n## Explore what you can do with ████\n## Explore what you can do with ████\n## Explore what you can do with ████\n## How to request a ride\n### Get started\n\n[links] ████ homepage · Ride — Request a ride · Earn · Business · ████ Eats · About us · Our offerings, apps, and products · How ████ works to request rides · Sustainability · Getting around New York City\n\n[main text]\n████ Ride Earn Business ████ Eats About About us Our offerings How ████ works Sustainability Explore Cities Getting around New York City Getting around Chicago Getting around Los Angeles Getting around Boston Getting around San Francisco Getting around Washington Getting around Philadelphia Getting around Houston Getting around Miami Getting around Las Vegas Newsroom Investor relations Autonomous ████ Advertising Merchants Blog Careers More No results EN Help Log in Sign up Ride Earn ████ Eats Business Welcome Drive & deliver Ride ████ Eats ████ for Business Manage account Sign out ████ Log in Sign up Ride Earn ████ Eats Business Welcome Drive & deliver Ride ████ Eats ████ for Business Manag",
+      "ok": true
+    },
+    {
+      "name": "Notion",
+      "url": "https://www.notion.so/",
+      "cat": "tools",
+      "score": 78,
+      "puzzle": "── what the agent received ──\nlang: en-us   headings: 15   links: 92   forms: 0   images: 45\n\n[headings]\n### Capture\n### Find\n### Automate\n# Where teams and agents Think together.\n## AI where your team works.\n## Bring everything into one system of record.\n## Get answers, instantly—with citations.\n## Keep work moving 24/7 with agents.\n\n[links] ██████ – Home · See all features→ · Capture · Find · Automate · See what’s new→ · ██████ App→ · Enterprise · Small businesses · Startups\n\n[main text]\nWhere teams and agents Think together. Capture context, find answers, and automate tasks with AI built for your team. Get ██████ freeRequest a demo <source media=\"(min-width: 840px)\" srcSet=\"/_next/image?url=%2Ffront-static%2Faccent-illustrations%2FagentTop-v2.png&amp;w=32&amp;q=75 32w, /_next/image?url=%2Ffront-static%2Faccent-illustrations%2FagentTop-v2.png&amp;w=48&amp;q=75 48w, /_next/image?url=%2Ffront-static%2Faccent-illustrations%2FagentTop-v2.png&amp;w=96&amp;q=75 96w, /_next/image?url=%2Ffront-static%2Faccent-illustrations%2FagentTop-v2.png&amp;w=128&amp;q=75 128w, /_next/image?url=%2Ffront-static%2Faccent-illustrations%2FagentTop-v2.png&amp;w=256&amp;q=75 256w, /_next/image?url=%2F",
+      "ok": true
+    },
+    {
+      "name": "Figma",
+      "url": "https://www.figma.com/",
+      "cat": "tools",
+      "score": 68,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 33   links: 150   forms: 0   images: 88\n\n[headings]\n## What you can do in █████\n## Explore all products\n## Additional product resources\n## Use cases\n## Roles\n## Organizations\n## Get started\n## Learn\n\n[links] Design and explore · Build and ship products · Dev Mode Translate designs into code · █████ MotionNew Animate your designs\n\n[main text]\nThe full-stack creative canvas Get started Move fast in the right direction on an AI-native canvas. Teammates and AI agents work in the same space with shared context. Generate new ideas, refine, and align—together. Your built-in creative collaborator Ask █████’s agent to add motion to designs, document your design systems, implement feedback, and more. Explore █████'s agent One workspace for your entire product development process. Made so your whole team can go from WIP to ship, together. Design anything you can imagine Turn your ideas into apps, websites, and products. Explore design tools Build with intention Dev tools that take you all the way to production. Explore build tools Powerful",
+      "ok": true
+    },
+    {
+      "name": "Slack",
+      "url": "https://slack.com/",
+      "cat": "tools",
+      "score": 66,
+      "puzzle": "── what the agent received ──\nlang: en-US   headings: 36   links: 263   forms: 0   images: 79\n\n[headings]\n# All your people and AI agents working together\n## Reimagine what’s possible with AI and agents\n## What’s new in █████\n### █████ CRM: Generate meeting insights & Salesforce tasks\n### █████bot in Lightning\n### Work Object Embeds\n### █████ Lists in the █████ MCP Server\n### Gmail Domain-Wide Auth (DWA)\n\n[links] █████ · ChannelsChat and work together · CanvasCreate, edit, and share docs · ListsManage projects in █████ · █████botMeet your new AI teammate · Native AISave time with built-in AI\n\n[main text]\nAll your people and AI agents working together █████ connects your team. █████bot multiplies what they can do. Get startedFind your plan Trusted by top teams <source src=\"https://a.█████-edge.com/ed0b821/marketing/img/homepage/revamped-25/hero/video-█████bot-big-mode@2x.mp4\" type=\"video/mp4\"><source src=\"https://a.█████-edge.com/39db480/marketing/img/homepage/revamped-25/hero/video-█████bot-big-mode@2x.webm\" type=\"video/webm\"><source src=\"https://a.█████-edge.com/efbd118/marketing/img/homepage/revamped-25/hero/video-close-deals@2x.mp4\" type=\"video/mp4\"><source src=\"https://a.█████-edge.com/efbd118/marketing/img/homepage/revamped-25/hero/video-close-deals@2x.webm\" type=\"video/webm\"><source sr",
+      "ok": true
+    },
+    {
+      "name": "Discord",
+      "url": "https://discord.com/",
+      "cat": "tools",
+      "score": 74,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 13   links: 131   forms: 0   images: 171\n\n[headings]\n# Group chat that’s all fun & games\n## find your friends on ███████.\n## MAKE YOUR GROUP CHATS MORE FUN\n## stream like you’re in the same room\n## Hop in when you're free, no need to call\n## See who's around to chill\n## always have something to do together\n## wherever YOU GAME, HANG OUT HERE\n\n[links] Home · Download1 of 9 · Nitro2 of 9 · Server Directory1 of 2 · Trending Games2 of 2 · Family Center 1 of 10 · Safety Library 2 of 10 · Safety News 3 of 10\n\n[main text]\nGroup chat that’s all fun & games ███████ is great for playing games and chilling with friends, or even building a worldwide community. Customize your own space to talk, play, and hang out. Download for Windows Open ███████ in your browser find your friends on ███████. Download <source src=\"https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6abc318508d098197d80bf43_Homepage_Make-Your-Group-Chat-More-Fun_EN_mp4.mp4\" data-wf-ignore=\"true\"/><source src=\"https://cdn.prod.website-files.com/6257adef93867e50d84d30e2%2F6abc318508d098197d80bf43_Homepage_Make-Your-Group-Chat-More-Fun_EN_webm.webm\" data-wf-ignore=\"true\"/> MAKE YOUR GROUP CHATS MORE FUN Use custom emoji, stickers, soundboard ",
+      "ok": true
+    },
+    {
+      "name": "Trello",
+      "url": "https://trello.com/",
+      "cat": "tools",
+      "score": 60,
+      "puzzle": "── what the agent received ──\nlang: en   headings: 18   links: 88   forms: 3   images: 8\n\n[headings]\n### Explore the features that help your team succeed\n### Meet ██████\n### Take a page out of these pre-built ██████ playbooks designed for all t\n### Our product in action\n### Compare plans & pricing\n### Learn & connect\n## Explore the features that help your team succeed\n### Meet ██████\n\n[links] Pricing · Check out ██████\n\n[main text]\nSign up - it’s free! By entering my email, I acknowledge the Atlassian Privacy Policy Watch video <source src=\"//videos.ctfassets.net/rz1oowkt5gyp/4AJBdHGUKUIDo7Po3f2kWJ/3923727607407f50f70ccf34ab3e9d90/updatedhero-mobile-final.mp4\" type=\"video/mp4\"/>Hero ██████ 101 Stay organized and efficient with Inbox, Boards, and Planner. Every to-do, idea, or responsibility—no matter how small—finds its place, keeping you at the top of your game. <source type=\"image/webp\" media=\"(min-width: 1200px)\" srcSet=\"//images.ctfassets.net/rz1oowkt5gyp/7lpUSxVqNRggpqzCNcnfo1/04cf35d0a0ef60e18c6575eb9a0374e4/inbox-slider.png?w=2184&amp;fm=webp 2x, //images.ctfassets.net/rz1oowkt5gyp/7lpUSxVqNRggpqzCNcnfo1/04cf35d",
+      "ok": true
+    }
+  ]
+}

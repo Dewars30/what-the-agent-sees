@@ -1,9 +1,12 @@
 import http from 'node:http';
-import { analyze, HttpError } from '../../core/page.mjs';
-import { shell, esc } from '../../core/kit.mjs';
+import { analyze, HttpError } from './core/page.mjs';
+import { shell, esc } from './core/kit.mjs';
 
-const PORT = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT || 8080);
 const APP = process.env.PUBLIC_ORIGIN || 'https://fieldnotes.synteq.app';
+const ENTRY = process.env.ENTRY_TWEET_ID || '';
+const intent = (text, reply) =>
+  'https://x.com/intent/post?text=' + encodeURIComponent(text) + (reply && ENTRY ? '&in_reply_to=' + ENTRY : '');
 
 function hash(s) {
   let h = 2166136261;
@@ -112,12 +115,45 @@ function oneLiner(r, seed) {
   ], seed);
 }
 
+function blockedRender(r) {
+  const b = r.blocked;
+  const shareText = `An AI agent knocked on ${b.host}. ${b.status === 200 ? 'It got a bot check.' : 'It got HTTP ' + b.status + '.'}\n\nTranscript: ${APP}`;
+  const lines = [
+    { kind: 'arrive', at: '00:00:00Z', text: `Arrived at ${b.host}.` },
+    { kind: 'worry', at: '00:00:01Z', text: b.status === 200 ? 'Something answered, but it was not the website. It was a test, to see whether I am human.' : `The server answered ${b.status} and nothing else.` },
+    { kind: 'fail', at: '00:00:02Z', text: 'I am not human. That is the entire point of me. I said so, honestly, in my user agent.' },
+    { kind: 'note', at: '00:00:03Z', text: 'There was no content to read. No headings, no links, no description. Only the test.' },
+    { kind: 'fail', at: '00:00:04Z', text: 'So I did not read your website. I read your door.' },
+    { kind: 'aside', at: '00:00:05Z', text: 'I will not come back. Nothing personal. There is nothing here for me to remember.' },
+  ];
+  const verdictLine = 'I am not a browser, so I did not get in.';
+  const rows = lines.map((l, i) => `<div class="ln ${l.kind}" style="animation-delay:${i * 90}ms"><span class="t">${l.at}</span><span class="m">${l.kind === 'fail' ? '✗' : l.kind === 'worry' ? '!' : l.kind === 'arrive' ? '»' : '·'}</span><span class="x">${esc(l.text)}</span></div>`).join('');
+  return shell({
+    title: `Field Notes — ${b.host}`,
+    description: `An AI agent tried to visit ${b.host}. It was asked to prove it was human. This is the transcript.`,
+    nav: false,
+    body: `<main>
+  <header class="top"><a class="brand" href="/"><span class="dot"></span>Field Notes</a><nav><a href="/">new visit</a></nav></header>
+  <div class="head">
+    <div class="kicker">Transcript · ${esc(b.host)}</div>
+    <h1 class="vh">“${esc(verdictLine)}”</h1>
+    <div class="meta"><span class="scorechip">0<em>/100</em></span><span class="muted small">Grade F · Invisible · ${esc(b.reason)}</span></div>
+  </div>
+  <section class="term">${rows}</section>
+  <div class="actions" style="padding:0;margin-top:24px">
+    <a class="btn primary" target="_blank" rel="noopener" href="${intent(shareText, false)}">Post this</a>
+    <a class="btn" href="/">Another site</a>
+  </div>
+  <p class="muted small" style="margin-top:22px;max-width:70ch">Bot protection is a real trade, not a mistake. The cost is that retrieval systems, assistants and agents also get the door, and unlike a person they do not come back later.</p>
+</main>`,
+  });
+}
+
 function render(r) {
   const { lines, verdictLine } = diary(r);
   const { scored, page: p } = r;
-  const share = encodeURIComponent(
-    `An AI agent visited ${p.host} and wrote down what it saw. Verdict: ${verdictLine}\n\n${scored.score}/100 · ${APP}`
-  );
+  const shareText = `An AI agent visited ${p.host} and wrote down what it saw. Verdict: ${verdictLine}\n\n${scored.score}/100 · ${APP}`;
+  const grokText = `"${verdictLine}"\n\nThat is an AI agent's summary of ${p.host} (${scored.score}/100). @grok read it and tell me if the agent was fair\n\n${APP}/?url=${encodeURIComponent(p.url)}`;
   const rows = lines
     .map(
       (l, i) => `<div class="ln ${l.kind}" style="animation-delay:${i * 90}ms">
@@ -138,7 +174,8 @@ function render(r) {
   </div>
   <section class="term">${rows}</section>
   <div class="actions" style="padding:0;margin-top:24px">
-    <a class="btn primary" target="_blank" rel="noopener" href="https://x.com/intent/tweet?text=${share}">Post the verdict</a>
+    <a class="btn primary" target="_blank" rel="noopener" href="${intent(shareText, false)}">Post the verdict</a>
+    <a class="btn" target="_blank" rel="noopener" href="${intent(grokText, true)}">Ask @grok if it was fair</a>
     <a class="btn" href="/?url=${encodeURIComponent(p.url)}">Visit again</a>
     <a class="btn" href="/">Another site</a>
   </div>
@@ -200,7 +237,25 @@ const server = http.createServer(async (req, res) => {
     res.end(body);
   };
   if (url.pathname === '/healthz') return send(200, 'text/plain', 'ok');
-  if (url.pathname === '/robots.txt') return send(200, 'text/plain', 'User-agent: *\nAllow: /\n');
+  if (url.pathname === '/robots.txt') return send(200, 'text/plain', 'User-agent: *\nAllow: /\nSitemap: ' + APP + '/sitemap.xml\n');
+  if (url.pathname === '/llms.txt') return send(200, 'text/plain; charset=utf-8', `# Field Notes
+
+> Field Notes sends a plain HTTP client to a URL, with no eyes and no JavaScript, and publishes the transcript: what the agent understood, what it could not, and what it would have done differently.
+
+Every line is generated from the response body and two adjacent files (robots.txt, llms.txt). No language model writes the notes, so the same page always produces the same transcript.
+
+## Use
+- ${APP}/?url=<url> returns a transcript and a verdict for any public page
+- ${APP}/about explains the method
+- Scores and findings are the same engine as AgentScore (${'https://agentscore.synteq.app'})
+
+## Quotable
+- A page that renders nothing without JavaScript reads, to an agent, as an empty room with excellent typography.
+- "Learn more" as link text tells an agent nothing about where the link goes.
+
+Source: https://github.com/Dewars30/what-the-agent-sees (MIT)
+`);
+  if (url.pathname === '/sitemap.xml') return send(200, 'application/xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${APP}/</loc></url><url><loc>${APP}/about</loc></url></urlset>`);
   if (url.pathname === '/about')
     return send(200, 'text/html; charset=utf-8', shell({
       title: 'About — Field Notes', description: 'How the transcript is made.',
@@ -215,6 +270,7 @@ const server = http.createServer(async (req, res) => {
       if (!target) return send(200, 'text/html; charset=utf-8', landing());
       try {
         const r = await analyze(target);
+        if (r.blocked) return send(200, 'text/html; charset=utf-8', blockedRender(r));
         return send(200, 'text/html; charset=utf-8', render(r));
       } catch (e) {
         const err = e instanceof HttpError ? e : new HttpError(500, 'The visit failed.');

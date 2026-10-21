@@ -74,6 +74,7 @@ pre.agent .m{color:#6f7d88}
 .finding h4{margin:0;font-size:13.5px;font-weight:600;letter-spacing:-.01em}
 .finding p{margin:4px 0 0;font-size:12.5px;color:var(--dim);line-height:1.55}
 .finding .fix{margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--acid);opacity:.85}
+.finding .worth{margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dimmer)}
 .tag{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;padding:2px 5px;border-radius:2px;margin-right:7px;vertical-align:1px}
 .tag.fail{background:rgba(255,90,82,.14);color:var(--red)}
 .tag.warn{background:rgba(255,176,46,.14);color:var(--amber)}

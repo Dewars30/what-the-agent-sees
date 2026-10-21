@@ -206,10 +206,14 @@ export function scorePage(p, extras = {}) {
   }
 
   const total = Math.round(dims.reduce((n, d) => n + d.score * d.weight, 0));
-  const findings = dims.flatMap((d) => d.findings.map((f) => ({ ...f, dimension: d.label })));
-  const fails = findings.filter((f) => f.level === 'fail');
-  const warns = findings.filter((f) => f.level === 'warn');
-  const oks = findings.filter((f) => f.level === 'ok');
+  // Attribute the recoverable points of each dimension to the findings in it,
+  // so every item carries an honest "what is this worth" number.
+  const findings = dims.flatMap((d) => {
+    const open = Math.max(0, Math.round((1 - d.score) * d.weight));
+    const fixable = d.findings.filter((f) => f.level !== 'ok');
+    const each = fixable.length ? Math.max(1, Math.round(open / fixable.length)) : 0;
+    return d.findings.map((f) => ({ ...f, dimension: d.label, worth: f.level === 'ok' ? 0 : each }));
+  });
 
   return {
     score: Math.max(0, Math.min(100, total)),
@@ -217,9 +221,10 @@ export function scorePage(p, extras = {}) {
     verdict: verdict(total),
     dims: dims.map((d) => ({ key: d.key, label: d.label, weight: d.weight, score: Math.round(d.score * 100), points: Math.round(d.score * d.weight) })),
     findings,
-    fails,
-    warns,
-    oks,
+    fails: findings.filter((f) => f.level === 'fail'),
+    warns: findings.filter((f) => f.level === 'warn'),
+    oks: findings.filter((f) => f.level === 'ok'),
+    openPoints: Math.max(0, 100 - total),
   };
 }
 
