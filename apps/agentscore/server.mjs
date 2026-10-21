@@ -12,6 +12,14 @@ const ENTRY = process.env.ENTRY_TWEET_ID || '2112816202309374003';
 const intent = (text, reply) =>
   'https://x.com/intent/post?text=' + encodeURIComponent(text) + (reply && ENTRY ? '&in_reply_to=' + ENTRY : '');
 
+function loadRefused() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(__dir, 'refused.json'), 'utf8'));
+  } catch {
+    return { blocked: [], scored: [] };
+  }
+}
+
 function loadIndex() {
   try {
     return JSON.parse(fs.readFileSync(path.join(__dir, 'index.json'), 'utf8'));
@@ -236,6 +244,29 @@ function indexView() {
   });
 }
 
+function refusedView() {
+  const d = loadRefused();
+  const blocked = [...d.blocked].sort((a, b) => a.host.localeCompare(b.host));
+  const shells = [...d.scored].filter((x) => x.words < 20).sort((a, b) => a.words - b.words);
+  const total = blocked.length + d.scored.length;
+  const rows = [
+    ...blocked.map((b) => `<tr><td><a href="/?url=${encodeURIComponent('https://' + b.host)}">${esc(b.host)}</a></td><td class="s" style="color:var(--red)">${b.status}</td><td class="s muted">refused</td></tr>`),
+    ...shells.map((x) => `<tr><td><a href="/?url=${encodeURIComponent('https://' + x.host)}">${esc(x.host)}</a></td><td class="s" style="color:var(--amber)">${x.words}</td><td class="s muted">words sent</td></tr>`),
+  ].join('');
+  return shell({
+    title: `The sites that refuse to be read · AgentScore`,
+    description: `Of ${total} well-known websites fetched by a plain HTTP client, ${blocked.length} refused to answer and ${shells.length} sent a page with no content.`,
+    body: `<main>
+  <h1 class="hero" style="font-size:clamp(26px,4vw,40px)">The sites that refuse to be read</h1>
+  <p class="sub">${total} household names, one plain HTTP request each, honest user agent, no cookies, no JavaScript. ${blocked.length} answered with a bot check or an error instead of the page. ${shells.length} more sent HTML with effectively no words in it. To an agent, all ${blocked.length + shells.length} are the same thing: nothing.</p>
+  <section class="card" style="margin-top:26px;padding:22px">
+    <table class="idx"><thead><tr><th>Host</th><th style="text-align:right">Status</th><th style="text-align:right">What we got</th></tr></thead><tbody>${rows}</tbody></table>
+  </section>
+  <p class="muted small" style="max-width:70ch">Measured ${esc(new Date().toISOString().slice(0, 10))}. Status 200 with a challenge page counts as a refusal: the body is a JavaScript puzzle, not the site. Rescan any row to see the current answer.</p>
+</main>`,
+  });
+}
+
 function methodView() {
   return shell({
     title: 'Method — AgentScore',
@@ -293,13 +324,17 @@ ${board}
 - Of 22 cloud and developer-tool homepages measured, the median score is around 75 and the best is netlify.com at 89.
 - A page with no server-rendered text cannot be read by most agents, scrapers and retrieval pipelines.
 
+## The sites that refuse to be read
+Fetched with a plain HTTP client, 2026-10-21: 21 of 40 well-known sites answered with a bot check or an error instead of the page, and 9 more sent HTML with effectively no words. Full table: ${APP}/refused
+
 ## Scope
 Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking; scanned pages are not stored.
 `);
     }
-    if (url.pathname === '/sitemap.xml') return send(200, 'application/xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${APP}/</loc></url><url><loc>${APP}/index</loc></url><url><loc>${APP}/method</loc></url></urlset>`);
+    if (url.pathname === '/sitemap.xml') return send(200, 'application/xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${APP}/</loc></url><url><loc>${APP}/index</loc></url><url><loc>${APP}/method</loc></url><url><loc>${APP}/refused</loc></url></urlset>`);
     if (url.pathname === '/method') return send(200, 'text/html; charset=utf-8', methodView());
     if (url.pathname === '/index') return send(200, 'text/html; charset=utf-8', indexView());
+    if (url.pathname === '/refused') return send(200, 'text/html; charset=utf-8', refusedView());
     if (url.pathname === '/api/scan') {
       const target = url.searchParams.get('url');
       const r = await analyze(target);

@@ -1,0 +1,207 @@
+{
+  "blocked": [
+    {
+      "host": "amazon.com",
+      "status": 202,
+      "reason": "amazon.com served a bot check instead of the page."
+    },
+    {
+      "host": "ebay.com",
+      "status": 403,
+      "reason": "ebay.com answered 403 instead of serving the page."
+    },
+    {
+      "host": "open.spotify.com",
+      "status": 200,
+      "reason": "open.spotify.com served a bot check instead of the page."
+    },
+    {
+      "host": "glassdoor.com",
+      "status": 403,
+      "reason": "glassdoor.com answered 403 instead of serving the page."
+    },
+    {
+      "host": "tesla.com",
+      "status": 403,
+      "reason": "tesla.com answered 403 instead of serving the page."
+    },
+    {
+      "host": "indeed.com",
+      "status": 403,
+      "reason": "indeed.com answered 403 instead of serving the page."
+    },
+    {
+      "host": "booking.com",
+      "status": 202,
+      "reason": "booking.com served a bot check instead of the page."
+    },
+    {
+      "host": "nytimes.com",
+      "status": 403,
+      "reason": "nytimes.com answered 403 instead of serving the page."
+    },
+    {
+      "host": "wsj.com",
+      "status": 401,
+      "reason": "wsj.com answered 401 instead of serving the page."
+    },
+    {
+      "host": "reddit.com",
+      "status": 200,
+      "reason": "reddit.com served a bot check instead of the page."
+    },
+    {
+      "host": "tiktok.com",
+      "status": 200,
+      "reason": "tiktok.com served a bot check instead of the page."
+    },
+    {
+      "host": "bloomberg.com",
+      "status": 403,
+      "reason": "bloomberg.com answered 403 instead of serving the page."
+    },
+    {
+      "host": "tripadvisor.com",
+      "status": 403,
+      "reason": "tripadvisor.com answered 403 instead of serving the page."
+    },
+    {
+      "host": "doordash.com",
+      "status": 403,
+      "reason": "doordash.com answered 403 instead of serving the page."
+    },
+    {
+      "host": "yelp.com",
+      "status": 403,
+      "reason": "yelp.com answered 403 instead of serving the page."
+    },
+    {
+      "host": "oracle.com",
+      "status": 403,
+      "reason": "oracle.com answered 403 instead of serving the page."
+    },
+    {
+      "host": "expedia.com",
+      "status": 429,
+      "reason": "expedia.com answered 429 instead of serving the page."
+    },
+    {
+      "host": "twitch.tv",
+      "status": 200,
+      "reason": "twitch.tv served a bot check instead of the page."
+    },
+    {
+      "host": "medium.com",
+      "status": 403,
+      "reason": "medium.com answered 403 instead of serving the page."
+    },
+    {
+      "host": "quora.com",
+      "status": 403,
+      "reason": "quora.com answered 403 instead of serving the page."
+    },
+    {
+      "host": "pinterest.com",
+      "status": 200,
+      "reason": "pinterest.com served a bot check instead of the page."
+    }
+  ],
+  "scored": [
+    {
+      "host": "walmart.com",
+      "score": 71,
+      "words": 467
+    },
+    {
+      "host": "target.com",
+      "score": 66,
+      "words": 566
+    },
+    {
+      "host": "airbnb.com",
+      "score": 63,
+      "words": 0
+    },
+    {
+      "host": "redfin.com",
+      "score": 54,
+      "words": 0
+    },
+    {
+      "host": "linkedin.com",
+      "score": 67,
+      "words": 586
+    },
+    {
+      "host": "x.com",
+      "score": 50,
+      "words": 0
+    },
+    {
+      "host": "instagram.com",
+      "score": 30,
+      "words": 0
+    },
+    {
+      "host": "zillow.com",
+      "score": 57,
+      "words": 0
+    },
+    {
+      "host": "facebook.com",
+      "score": 32,
+      "words": 56
+    },
+    {
+      "host": "shopify.com",
+      "score": 65,
+      "words": 979
+    },
+    {
+      "host": "uber.com",
+      "score": 62,
+      "words": 1173
+    },
+    {
+      "host": "ibm.com",
+      "score": 50,
+      "words": 0
+    },
+    {
+      "host": "dell.com",
+      "score": 75,
+      "words": 935
+    },
+    {
+      "host": "salesforce.com",
+      "score": 69,
+      "words": 4294
+    },
+    {
+      "host": "hp.com",
+      "score": 58,
+      "words": 0
+    },
+    {
+      "host": "costco.com",
+      "score": 54,
+      "words": 6
+    },
+    {
+      "host": "forbes.com",
+      "score": 50,
+      "words": 0
+    },
+    {
+      "host": "substack.com",
+      "score": 55,
+      "words": 633
+    },
+    {
+      "host": "bestbuy.com",
+      "score": 53,
+      "words": 57
+    }
+  ],
+  "failed": []
+}
