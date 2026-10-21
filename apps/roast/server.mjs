@@ -4,7 +4,7 @@ import { shell, esc } from './core/kit.mjs';
 
 const PORT = Number(process.env.PORT || 8080);
 const APP = process.env.PUBLIC_ORIGIN || 'https://fieldnotes.synteq.app';
-const ENTRY = process.env.ENTRY_TWEET_ID || '';
+const ENTRY = process.env.ENTRY_TWEET_ID || '2112826524852519066';
 const intent = (text, reply) =>
   'https://x.com/intent/post?text=' + encodeURIComponent(text) + (reply && ENTRY ? '&in_reply_to=' + ENTRY : '');
 
