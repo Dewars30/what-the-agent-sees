@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyze, HttpError } from './core/page.mjs';
-import { shell, esc, quoteIntent, replyIntent, repostIntent, renderOgSvg } from './core/kit.mjs';
+import { shell, esc, quoteIntent, replyIntent, repostIntent, renderOgSvg, renderOgPng } from './core/kit.mjs';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8080);
@@ -189,15 +189,16 @@ function landing(err) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const send = (code, type, body) => { res.writeHead(code, { 'content-type': type, 'cache-control': 'no-store' }); res.end(body); };
-  if (url.pathname === '/og.svg') {
-    const svg = renderOgSvg({
+  if (url.pathname === '/og.svg' || url.pathname === '/og.png') {
+    const cardOpts = {
       app: 'SITE FM',
       title: url.searchParams.get('title') || 'Every Website Has a Sound',
-      score: url.searchParams.get('score') || 'HTML → SYNTH',
-      subtitle: url.searchParams.get('sub') || 'Headings pick the melody · links set tempo · missing alt text is silence',
+      score: url.searchParams.get('score') || 'HTML TO SYNTH',
+      subtitle: url.searchParams.get('sub') || 'Headings pick the melody - links set tempo - missing alt text is silence',
       badge: 'WEB AUDIO SYNTH',
-    });
-    return send(200, 'image/svg+xml; charset=utf-8', svg);
+    };
+    if (url.pathname === '/og.png') return send(200, 'image/png', renderOgPng(cardOpts));
+    return send(200, 'image/svg+xml; charset=utf-8', renderOgSvg(cardOpts));
   }
   if (url.pathname === '/healthz') return send(200, 'text/plain', 'ok');
   if (url.pathname === '/robots.txt') return send(200, 'text/plain', 'User-agent: *\nAllow: /\nSitemap: ' + APP + '/sitemap.xml\n');

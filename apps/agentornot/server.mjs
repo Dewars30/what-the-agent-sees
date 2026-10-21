@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyze } from './core/page.mjs';
 import { grade, verdict } from './core/score.mjs';
-import { shell, esc, quoteIntent, replyIntent, repostIntent, viralBar, renderOgSvg } from './core/kit.mjs';
+import { shell, esc, quoteIntent, replyIntent, repostIntent, viralBar, renderOgSvg, renderOgPng } from './core/kit.mjs';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8080);
@@ -500,15 +500,16 @@ const server = http.createServer(async (req, res) => {
     const p = url.pathname;
     const rounds = roundsWithOptions();
 
-    if (p === '/og.svg') {
-      const svg = renderOgSvg({
-        app: 'AGENT OR NOT · ARENA',
+    if (p === '/og.svg' || p === '/og.png') {
+      const cardOpts = {
+        app: 'AGENT OR NOT - ARENA',
         title: url.searchParams.get('title') || '1v1 Website Cage Match',
-        score: url.searchParams.get('score') || 'SYNTEQ 81 vs DO 54',
+        score: url.searchParams.get('score') || 'SYNTEQ 81 VS DO 54',
         subtitle: url.searchParams.get('sub') || 'Who built for the AI agent reader? Pit any two domains head-to-head.',
         badge: url.searchParams.get('badge') || 'KING OF THE HILL',
-      });
-      return send(res, 200, 'image/svg+xml; charset=utf-8', svg);
+      };
+      if (p === '/og.png') return send(res, 200, 'image/png', renderOgPng(cardOpts));
+      return send(res, 200, 'image/svg+xml; charset=utf-8', renderOgSvg(cardOpts));
     }
 
     if (p === '/') {

@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { analyze, HttpError } from './core/page.mjs';
-import { shell, esc, quoteIntent, replyIntent, repostIntent, renderOgSvg } from './core/kit.mjs';
+import { shell, esc, quoteIntent, replyIntent, repostIntent, renderOgSvg, renderOgPng } from './core/kit.mjs';
 import { grade, verdict } from './core/score.mjs';
 
 const PORT = Number(process.env.PORT || 8080);
@@ -213,15 +213,16 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host || 'x'}`);
     const p = url.pathname;
 
-    if (p === '/og.svg') {
-      const svg = renderOgSvg({
+    if (p === '/og.svg' || p === '/og.png') {
+      const cardOpts = {
         app: 'LLMS FORGE',
         title: url.searchParams.get('title') || 'Forge /llms.txt for Any Website',
-        score: url.searchParams.get('score') || '/llms.txt',
+        score: url.searchParams.get('score') || '/LLMS.TXT',
         subtitle: url.searchParams.get('sub') || 'Machine-readable summary + agent blocker report in one GET',
         badge: 'LLMSTXT GENERATOR',
-      });
-      return send(res, 200, 'image/svg+xml; charset=utf-8', svg);
+      };
+      if (p === '/og.png') return send(res, 200, 'image/png', renderOgPng(cardOpts));
+      return send(res, 200, 'image/svg+xml; charset=utf-8', renderOgSvg(cardOpts));
     }
     if (p === '/') return send(res, 200, 'text/html; charset=utf-8', homePage());
     if (p === '/healthz') return send(res, 200, 'text/plain', 'ok');

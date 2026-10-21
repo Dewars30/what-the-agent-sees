@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyze, HttpError } from './core/page.mjs';
-import { shell, esc, quoteIntent, replyIntent, repostIntent, viralBar, renderOgSvg } from './core/kit.mjs';
+import { shell, esc, quoteIntent, replyIntent, repostIntent, viralBar, renderOgSvg, renderOgPng } from './core/kit.mjs';
 import { grade, verdict } from './core/score.mjs';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
@@ -274,15 +274,16 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host || 'x'}`);
     const p = url.pathname;
 
-    if (p === '/og.svg') {
-      const svg = renderOgSvg({
-        app: 'AGENTRANK · CLOUD INDEX',
+    if (p === '/og.svg' || p === '/og.png') {
+      const cardOpts = {
+        app: 'AGENTRANK - CLOUD INDEX',
         title: url.searchParams.get('title') || '30 Cloud Providers, Scored by an Agent',
-        score: url.searchParams.get('score') || 'NETLIFY 89 · SYNTEQ 81 · AWS 70',
-        subtitle: url.searchParams.get('sub') || 'DO 54 · Vultr 0 (refused) · Deterministic raw HTML rubric',
+        score: url.searchParams.get('score') || 'NETLIFY 89 - SYNTEQ 81',
+        subtitle: url.searchParams.get('sub') || 'DO 54 - Vultr 0 (refused) - Deterministic raw HTML rubric',
         badge: 'CLOUD LEADERBOARD',
-      });
-      return send(res, 200, 'image/svg+xml; charset=utf-8', svg);
+      };
+      if (p === '/og.png') return send(res, 200, 'image/png', renderOgPng(cardOpts));
+      return send(res, 200, 'image/svg+xml; charset=utf-8', renderOgSvg(cardOpts));
     }
     if (p === '/') return send(res, 200, 'text/html; charset=utf-8', boardPage());
     if (p === '/method') return send(res, 200, 'text/html; charset=utf-8', methodPage);

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyze, HttpError } from './core/page.mjs';
-import { shell, esc, quoteIntent, replyIntent, repostIntent, viralBar, renderOgSvg } from './core/kit.mjs';
+import { shell, esc, quoteIntent, replyIntent, repostIntent, viralBar, renderOgSvg, renderOgPng } from './core/kit.mjs';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8080);
@@ -305,15 +305,16 @@ const server = http.createServer(async (req, res) => {
     res.end(body);
   };
   try {
-    if (url.pathname === '/og.svg') {
-      const svg = renderOgSvg({
+    if (url.pathname === '/og.svg' || url.pathname === '/og.png') {
+      const cardOpts = {
         app: 'AGENTSCORE',
         title: url.searchParams.get('title') || 'Your site, as an AI agent sees it',
         score: url.searchParams.get('score') || '0 - 100',
-        subtitle: url.searchParams.get('sub') || '7 weighted dimensions · 22 developer homepages indexed · zero models',
+        subtitle: url.searchParams.get('sub') || '7 weighted dimensions - 22 developer homepages indexed - zero models',
         badge: 'AGENT READABILITY',
-      });
-      return send(200, 'image/svg+xml; charset=utf-8', svg);
+      };
+      if (url.pathname === '/og.png') return send(200, 'image/png', renderOgPng(cardOpts));
+      return send(200, 'image/svg+xml; charset=utf-8', renderOgSvg(cardOpts));
     }
     if (url.pathname === '/healthz') return send(200, 'text/plain', 'ok');
     if (url.pathname === '/robots.txt') return send(200, 'text/plain', 'User-agent: *\nAllow: /\nSitemap: ' + APP + '/sitemap.xml\n');

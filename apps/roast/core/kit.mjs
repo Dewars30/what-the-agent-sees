@@ -1,4 +1,6 @@
 // Shared shell + CSS. One file, no build step, no network fonts.
+import zlib from 'node:zlib';
+
 export const esc = (s) =>
   String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -182,7 +184,129 @@ export function renderOgSvg({
 </svg>`;
 }
 
-export function shell({ title, description, body, head = '', nav = true, footer = true, ogImage = '/og.svg', challenger = null }) {
+// 5x7 bitmap font for uppercase ASCII, digits, and punctuation (zero dependencies)
+const GLYPHS = {
+  ' ': [0,0,0,0,0,0,0],
+  A: [14,17,17,31,17,17,17], B: [30,17,17,30,17,17,30], C: [14,17,16,16,16,17,14],
+  D: [30,17,17,17,17,17,30], E: [31,16,16,30,16,16,31], F: [31,16,16,30,16,16,16],
+  G: [14,17,16,23,17,17,15], H: [17,17,17,31,17,17,17], I: [14,4,4,4,4,4,14],
+  J: [7,2,2,2,18,18,12], K: [17,18,20,24,20,18,17], L: [16,16,16,16,16,16,31],
+  M: [17,27,21,21,17,17,17], N: [17,25,21,19,17,17,17], O: [14,17,17,17,17,17,14],
+  P: [30,17,17,30,16,16,16], Q: [14,17,17,17,21,18,13], R: [30,17,17,30,20,18,17],
+  S: [15,16,16,14,1,1,30], T: [31,4,4,4,4,4,4], U: [17,17,17,17,17,17,14],
+  V: [17,17,17,17,17,10,4], W: [17,17,17,21,21,27,17], X: [17,17,10,4,10,17,17],
+  Y: [17,17,10,4,4,4,4], Z: [31,1,2,4,8,16,31],
+  '0': [14,17,19,21,25,17,14], '1': [4,12,4,4,4,4,14], '2': [14,17,1,6,8,16,31],
+  '3': [30,1,1,14,1,1,30], '4': [2,6,10,18,31,2,2], '5': [31,16,30,1,1,17,14],
+  '6': [14,16,16,30,17,17,14], '7': [31,1,2,4,8,8,8], '8': [14,17,17,14,17,17,14],
+  '9': [14,17,17,15,1,1,14],
+  '-': [0,0,0,31,0,0,0], '.': [0,0,0,0,0,12,12], ':': [0,12,12,0,12,12,0],
+  '/': [1,2,2,4,8,8,16], '#': [10,31,10,10,31,10,0], '(': [2,4,8,8,8,4,2],
+  ')': [8,4,2,2,2,4,8], '%': [25,25,2,4,8,19,19], '?': [14,17,1,6,4,0,4],
+  '!': [4,4,4,4,4,0,4], '+': [0,4,4,31,4,4,0],
+};
+
+const CRC_TABLE = new Uint32Array(256);
+for (let n = 0; n < 256; n++) {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+  CRC_TABLE[n] = c >>> 0;
+}
+function crc32(buf) {
+  let c = 0xffffffff;
+  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+function pngChunk(type, data) {
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length, 0);
+  const t = Buffer.from(type, 'ascii');
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(Buffer.concat([t, data])), 0);
+  return Buffer.concat([len, t, data, crc]);
+}
+
+export function renderOgPng({
+  app = 'WHAT THE AGENT SEES',
+  title = 'CAN AN AI AGENT READ YOUR SITE?',
+  score = '0-100',
+  subtitle = 'ONE HTTP GET - RAW HTML - ZERO JS - DETERMINISTIC RUBRIC',
+  badge = 'LIVE ON SYNTEQ',
+} = {}) {
+  const W = 1200, H = 630, STRIDE = W + 1;
+  const raw = new Uint8Array(H * STRIDE);
+  // Palette: 0=#08090a (bg), 1=#0c0e10 (panel), 2=#262c32 (border), 3=#c6f24e (acid), 4=#eceff1 (fg), 5=#8b949e (dim), 6=#141a0d (badge bg), 7=#15191d (grid)
+  const fillRect = (x0, y0, w, h, col) => {
+    const x1 = Math.min(W, Math.max(0, x0 + w)), y1 = Math.min(H, Math.max(0, y0 + h));
+    const xs = Math.max(0, x0), ys = Math.max(0, y0);
+    for (let y = ys; y < y1; y++) raw.fill(col, y * STRIDE + 1 + xs, y * STRIDE + 1 + x1);
+  };
+  // Grid background
+  for (let y = 0; y < H; y += 60) fillRect(0, y, W, 1, 7);
+  for (let x = 0; x < W; x += 60) fillRect(x, 0, 1, H, 7);
+  // Outer card + border + acid top bar
+  fillRect(42, 42, 1116, 546, 2);
+  fillRect(44, 44, 1112, 542, 1);
+  fillRect(44, 44, 1112, 6, 3);
+  // Badge box
+  fillRect(858, 76, 262, 44, 3);
+  fillRect(860, 78, 258, 40, 6);
+  // Divider line
+  fillRect(80, 504, 1040, 2, 2);
+
+  const drawText = (str, x, y, scale, col, maxChars = 48) => {
+    const clean = String(str || '').toUpperCase().replace(/[^A-Z0-9 \-.:/#()%?!+]/g, ' ').slice(0, maxChars);
+    let cx = x;
+    for (let i = 0; i < clean.length; i++) {
+      const g = GLYPHS[clean[i]] || GLYPHS[' '];
+      for (let r = 0; r < 7; r++) {
+        const rowBits = g[r];
+        for (let c = 0; c < 5; c++) {
+          if ((rowBits >> (4 - c)) & 1) fillRect(cx + c * scale, y + r * scale, scale, scale, col);
+        }
+      }
+      cx += 6 * scale;
+      if (cx > W - 80) break;
+    }
+  };
+
+  fillRect(80, 88, 16, 16, 3);
+  drawText(app, 108, 86, 3, 4, 32);
+  drawText(badge, 876, 90, 2, 3, 18);
+  drawText(title, 80, 180, 5, 4, 34);
+  drawText(score, 80, 285, 13, 3, 13);
+  drawText(subtitle, 80, 445, 3, 5, 54);
+  drawText('SYNTEQ HACKATHON - BUILT FOR THE MACHINE READER', 80, 530, 3, 5, 50);
+
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(W, 0);
+  ihdr.writeUInt32BE(H, 4);
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 3; // indexed color
+
+  const plte = Buffer.from([
+    0x08, 0x09, 0x0a, // 0 bg
+    0x0c, 0x0e, 0x10, // 1 panel
+    0x26, 0x2c, 0x32, // 2 border
+    0xc6, 0xf2, 0x4e, // 3 acid
+    0xec, 0xef, 0xf1, // 4 fg
+    0x8b, 0x94, 0x9e, // 5 dim
+    0x14, 0x1a, 0x0d, // 6 badge bg
+    0x15, 0x19, 0x1d, // 7 grid
+  ]);
+
+  const idat = zlib.deflateSync(raw, { level: 1 });
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    pngChunk('IHDR', ihdr),
+    pngChunk('PLTE', plte),
+    pngChunk('IDAT', idat),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+export function shell({ title, description, body, head = '', nav = true, footer = true, ogImage = '/og.png', challenger = null }) {
+  const pngOg = String(ogImage || '/og.png').replace(/\/og\.svg(\?|$)/, '/og.png$1');
   const banner = challenger && challenger.rival
     ? `<div class="challenger-banner">
         <span>⚔️ <strong>PVP CHALLENGE:</strong> Can your site beat <strong>${esc(challenger.rival)}</strong>${challenger.score != null ? ` (${esc(challenger.score)}/100)` : ''}?</span>
@@ -196,7 +320,8 @@ export function shell({ title, description, body, head = '', nav = true, footer 
 <meta name="description" content="${esc(description)}">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}">
 <meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
-<meta property="og:image" content="${esc(ogImage)}"><meta name="twitter:image" content="${esc(ogImage)}">
+<meta property="og:image" content="${esc(pngOg)}"><meta name="twitter:image" content="${esc(pngOg)}">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <link rel="icon" href="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="%2308090a"/><circle cx="16" cy="16" r="6" fill="%23c6f24e"/></svg>')}">
 <style>${CSS}</style>${head}
 </head><body>

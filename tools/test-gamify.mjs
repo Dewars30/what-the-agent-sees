@@ -11,7 +11,19 @@ assert.equal(typeof kit.quoteIntent, 'function', 'quoteIntent must be exported f
 assert.equal(typeof kit.replyIntent, 'function', 'replyIntent must be exported from core/kit.mjs');
 assert.equal(typeof kit.repostIntent, 'function', 'repostIntent must be exported from core/kit.mjs');
 assert.equal(typeof kit.renderOgSvg, 'function', 'renderOgSvg must be exported from core/kit.mjs');
+assert.equal(typeof kit.renderOgPng, 'function', 'renderOgPng must be exported from core/kit.mjs');
 assert.equal(typeof kit.viralBar, 'function', 'viralBar must be exported from core/kit.mjs');
+
+const png = kit.renderOgPng({
+  app: 'AGENT OR NOT',
+  title: 'Synteq vs DigitalOcean',
+  score: '81 - 54',
+  subtitle: '4-Round Agent Readability Cage Match',
+  badge: 'KNOCKOUT',
+});
+assert.ok(Buffer.isBuffer(png), 'renderOgPng must return a Buffer');
+assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a', 'renderOgPng must have valid PNG signature');
+assert.ok(png.length > 1000, 'renderOgPng must produce non-empty PNG');
 
 const qUrl = kit.quoteIntent('Synteq knocked out DO 81-54', '2112839384341106769');
 assert.match(qUrl, /^https:\/\/x\.com\/intent\/post\?text=/);
@@ -41,8 +53,8 @@ const htmlWithMeta = kit.shell({
   ogImage: 'https://agentornot.synteq.app/og.svg?title=Test',
   challenger: { rival: 'synteq.com', score: 81, actionHref: '/?url=yoursite.com' },
 });
-assert.match(htmlWithMeta, /property="og:image" content="https:\/\/agentornot\.synteq\.app\/og\.svg\?title=Test"/);
-assert.match(htmlWithMeta, /name="twitter:image" content="https:\/\/agentornot\.synteq\.app\/og\.svg\?title=Test"/);
+assert.match(htmlWithMeta, /property="og:image" content="https:\/\/agentornot\.synteq\.app\/og\.png\?title=Test"/);
+assert.match(htmlWithMeta, /name="twitter:image" content="https:\/\/agentornot\.synteq\.app\/og\.png\?title=Test"/);
 assert.match(htmlWithMeta, /synteq\.com/, 'challenger banner must render rival name');
 assert.match(htmlWithMeta, /81/, 'challenger banner must render rival score');
 
@@ -113,6 +125,10 @@ await withServer('agentornot', 18901, async (base) => {
   const ogRes = await fetch(`${base}/og.svg?title=Test`);
   assert.equal(ogRes.status, 200);
   assert.match(ogRes.headers.get('content-type') || '', /image\/svg\+xml/);
+
+  const pngRes = await fetch(`${base}/og.png?title=Test`);
+  assert.equal(pngRes.status, 200);
+  assert.match(pngRes.headers.get('content-type') || '', /image\/png/);
 });
 
 await withServer('agentrank', 18902, async (base) => {
