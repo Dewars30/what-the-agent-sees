@@ -1,0 +1,225 @@
+{
+  "generated": "2026-10-21",
+  "rows": [
+    {
+      "host": "netlify.com",
+      "score": 89,
+      "grade": "B",
+      "verdict": "Agent-friendly",
+      "fails": 0,
+      "words": 954,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "fly.io",
+      "score": 86,
+      "grade": "B",
+      "verdict": "Agent-friendly",
+      "fails": 2,
+      "words": 616,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "heroku.com",
+      "score": 85,
+      "grade": "B",
+      "verdict": "Agent-friendly",
+      "fails": 1,
+      "words": 1083,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "supabase.com",
+      "score": 84,
+      "grade": "B",
+      "verdict": "Agent-friendly",
+      "fails": 1,
+      "words": 1108,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "notion.com",
+      "score": 83,
+      "grade": "B",
+      "verdict": "Agent-friendly",
+      "fails": 1,
+      "words": 799,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "railway.com",
+      "score": 83,
+      "grade": "B",
+      "verdict": "Agent-friendly",
+      "fails": 1,
+      "words": 1000,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "synteq.com",
+      "score": 81,
+      "grade": "B",
+      "verdict": "Agent-friendly",
+      "fails": 1,
+      "words": 992,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "stripe.com",
+      "score": 80,
+      "grade": "B",
+      "verdict": "Agent-friendly",
+      "fails": 1,
+      "words": 2617,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "cloudflare.com",
+      "score": 78,
+      "grade": "C",
+      "verdict": "Usable by agents",
+      "fails": 2,
+      "words": 940,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "vercel.com",
+      "score": 76,
+      "grade": "C",
+      "verdict": "Usable by agents",
+      "fails": 1,
+      "words": 229,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "neon.com",
+      "score": 75,
+      "grade": "C",
+      "verdict": "Usable by agents",
+      "fails": 1,
+      "words": 580,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "twilio.com",
+      "score": 75,
+      "grade": "C",
+      "verdict": "Usable by agents",
+      "fails": 1,
+      "words": 1123,
+      "llms": false,
+      "blockedAi": 0
+    },
+    {
+      "host": "postman.com",
+      "score": 73,
+      "grade": "C",
+      "verdict": "Usable by agents",
+      "fails": 1,
+      "words": 570,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "render.com",
+      "score": 73,
+      "grade": "C",
+      "verdict": "Usable by agents",
+      "fails": 1,
+      "words": 221,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "cursor.com",
+      "score": 71,
+      "grade": "C",
+      "verdict": "Usable by agents",
+      "fails": 1,
+      "words": 1214,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "aws.amazon.com",
+      "score": 70,
+      "grade": "C",
+      "verdict": "Usable by agents",
+      "fails": 1,
+      "words": 644,
+      "llms": false,
+      "blockedAi": 0
+    },
+    {
+      "host": "hetzner.com",
+      "score": 70,
+      "grade": "C",
+      "verdict": "Usable by agents",
+      "fails": 2,
+      "words": 606,
+      "llms": false,
+      "blockedAi": 0
+    },
+    {
+      "host": "linear.app",
+      "score": 67,
+      "grade": "D",
+      "verdict": "Half-visible",
+      "fails": 2,
+      "words": 1378,
+      "llms": true,
+      "blockedAi": 0
+    },
+    {
+      "host": "figma.com",
+      "score": 65,
+      "grade": "D",
+      "verdict": "Half-visible",
+      "fails": 2,
+      "words": 259,
+      "llms": false,
+      "blockedAi": 16
+    },
+    {
+      "host": "github.com",
+      "score": 65,
+      "grade": "D",
+      "verdict": "Half-visible",
+      "fails": 3,
+      "words": 697,
+      "llms": true,
+      "blockedAi": 1
+    },
+    {
+      "host": "digitalocean.com",
+      "score": 54,
+      "grade": "E",
+      "verdict": "Hostile to agents",
+      "fails": 6,
+      "words": 0,
+      "llms": false,
+      "blockedAi": 0
+    },
+    {
+      "host": "replit.com",
+      "score": 53,
+      "grade": "E",
+      "verdict": "Hostile to agents",
+      "fails": 7,
+      "words": 0,
+      "llms": true,
+      "blockedAi": 16
+    }
+  ]
+}
