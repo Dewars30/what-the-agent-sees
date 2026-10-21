@@ -3,14 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyze, HttpError } from './core/page.mjs';
-import { shell, esc } from './core/kit.mjs';
+import { shell, esc, quoteIntent, replyIntent, repostIntent, renderOgSvg } from './core/kit.mjs';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8080);
 const APP = process.env.PUBLIC_ORIGIN || 'https://sitefm.synteq.app';
-const ENTRY = process.env.ENTRY_TWEET_ID || '2112827262995468697';
-const intent = (text, reply) =>
-  'https://x.com/intent/post?text=' + encodeURIComponent(text) + (reply && ENTRY ? '&in_reply_to=' + ENTRY : '');
+const ENTRY = process.env.ENTRY_TWEET_ID || process.env.ENTRY_POST_ID || '2112827262995468697';
+const intent = (text, reply) => (reply ? replyIntent(text, ENTRY) : quoteIntent(text, ENTRY));
 
 function hash(s) {
   let h = 2166136261;
@@ -133,8 +132,9 @@ function player(r) {
       <button id="play" class="play">▶ Play</button>
       <button id="stop" class="btn">Stop</button>
       <span class="legend"><i class="lk"></i>headings <i class="lk l2"></i>links <i class="lk l3"></i>images <i class="lk l4"></i>forms</span>
-      <a class="btn" target="_blank" rel="noopener" href="${intent(shareText, false)}">Share this track</a>
-      <a class="btn" target="_blank" rel="noopener" href="${intent(grokText, true)}">Ask @grok the genre</a>
+      <a class="btn primary" target="_blank" rel="noopener" href="${intent(shareText, false)}">Quote-Post Track (+3 pts)</a>
+      <a class="btn" target="_blank" rel="noopener" href="${intent(grokText, true)}">Ask @grok the Genre (+2 pts)</a>
+      <a class="btn" target="_blank" rel="noopener" href="${repostIntent(ENTRY)}">1-Click Repost (+3 pts)</a>
     </div>
   </section>
   <section class="grid3" style="margin-top:26px">
@@ -189,6 +189,16 @@ function landing(err) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const send = (code, type, body) => { res.writeHead(code, { 'content-type': type, 'cache-control': 'no-store' }); res.end(body); };
+  if (url.pathname === '/og.svg') {
+    const svg = renderOgSvg({
+      app: 'SITE FM',
+      title: url.searchParams.get('title') || 'Every Website Has a Sound',
+      score: url.searchParams.get('score') || 'HTML → SYNTH',
+      subtitle: url.searchParams.get('sub') || 'Headings pick the melody · links set tempo · missing alt text is silence',
+      badge: 'WEB AUDIO SYNTH',
+    });
+    return send(200, 'image/svg+xml; charset=utf-8', svg);
+  }
   if (url.pathname === '/healthz') return send(200, 'text/plain', 'ok');
   if (url.pathname === '/robots.txt') return send(200, 'text/plain', 'User-agent: *\nAllow: /\nSitemap: ' + APP + '/sitemap.xml\n');
   if (url.pathname === '/llms.txt') return send(200, 'text/plain; charset=utf-8', `# Site FM

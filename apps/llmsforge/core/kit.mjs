@@ -103,9 +103,92 @@ footer.bot a{text-decoration:none}footer.bot a:hover{color:var(--acid)}
 @media(max-width:700px){.grid3{grid-template-columns:1fr}}
 .stat{font-family:var(--mono);font-size:26px;letter-spacing:-.02em}
 .stat .u{font-size:12px;color:var(--dimmer);margin-left:3px}
+.challenger-banner{border:1px solid var(--acid);background:rgba(198,242,78,.07);border-radius:4px;padding:12px 16px;margin:16px 0 0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-family:var(--mono);font-size:12.5px}
+.challenger-banner strong{color:var(--acid)}
+.viral-strip{border:1px solid var(--line);background:var(--panel2);border-radius:4px;padding:14px 18px;margin:20px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.viral-strip .v-copy{font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.viral-strip .v-copy strong{color:var(--acid)}
+.viral-strip .v-btns{display:flex;gap:8px;flex-wrap:wrap}
 `;
 
-export function shell({ title, description, body, head = '', nav = true, footer = true }) {
+export function quoteIntent(text, entryId, handle = 'TonyDiefenbach') {
+  const base = `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
+  return entryId ? `${base}&url=${encodeURIComponent(`https://x.com/${handle}/status/${entryId}`)}` : base;
+}
+
+export function replyIntent(text, entryId) {
+  const base = `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
+  return entryId ? `${base}&in_reply_to=${encodeURIComponent(entryId)}` : base;
+}
+
+export function repostIntent(entryId) {
+  return `https://x.com/intent/retweet?tweet_id=${encodeURIComponent(entryId)}`;
+}
+
+export function likeIntent(entryId) {
+  return `https://x.com/intent/like?tweet_id=${encodeURIComponent(entryId)}`;
+}
+
+export function viralBar({
+  entryId,
+  quoteText,
+  replyText,
+  quoteLabel = 'Quote-Post Result (+3 pts)',
+  replyLabel = 'Post to Official Thread (+2 pts)',
+  repostLabel = '1-Click Repost (+3 pts)',
+  prompt = 'Official Hackathon Arena: Quote-post or drop your score in the thread to lock it on the live board.',
+}) {
+  if (!entryId) return '';
+  return `<div class="viral-strip">
+    <div class="v-copy"><strong>⚡ LIVE ARENA</strong> · ${esc(prompt)}</div>
+    <div class="v-btns">
+      ${quoteText ? `<a class="btn primary" target="_blank" rel="noopener" href="${quoteIntent(quoteText, entryId)}">${esc(quoteLabel)}</a>` : ''}
+      ${replyText ? `<a class="btn" target="_blank" rel="noopener" href="${replyIntent(replyText, entryId)}">${esc(replyLabel)}</a>` : ''}
+      <a class="btn" target="_blank" rel="noopener" href="${repostIntent(entryId)}">${esc(repostLabel)}</a>
+    </div>
+  </div>`;
+}
+
+export function renderOgSvg({
+  app = 'WHAT THE AGENT SEES',
+  title = 'Can an AI agent read your site?',
+  score = '0-100',
+  subtitle = 'One HTTP GET · Raw HTML · Zero JS · Deterministic Rubric',
+  badge = 'LIVE ON SYNTEQ',
+} = {}) {
+  const safeApp = esc(String(app).slice(0, 36));
+  const safeTitle = esc(String(title).slice(0, 48));
+  const safeScore = esc(String(score).slice(0, 22));
+  const safeSub = esc(String(subtitle).slice(0, 82));
+  const safeBadge = esc(String(badge).slice(0, 28));
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <pattern id="g" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#181c20" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="#08090a"/>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <rect x="44" y="44" width="1112" height="542" rx="8" fill="#0c0e10" stroke="#262c32" stroke-width="2"/>
+  <circle cx="88" cy="96" r="8" fill="#c6f24e"/>
+  <text x="110" y="103" fill="#eceff1" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="20" letter-spacing="4">${safeApp}</text>
+  <rect x="910" y="74" width="210" height="38" rx="4" fill="#141a0d" stroke="#c6f24e" stroke-width="1.5"/>
+  <text x="1015" y="99" text-anchor="middle" fill="#c6f24e" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="15" font-weight="700" letter-spacing="2">${safeBadge}</text>
+  <text x="80" y="220" fill="#eceff1" font-family="-apple-system,BlinkMacSystemFont,Inter,sans-serif" font-size="54" font-weight="700">${safeTitle}</text>
+  <text x="80" y="385" fill="#c6f24e" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="124" font-weight="700" letter-spacing="-3">${safeScore}</text>
+  <text x="80" y="468" fill="#8b949e" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="24">${safeSub}</text>
+  <line x1="80" y1="505" x2="1120" y2="505" stroke="#1f2429" stroke-width="1.5"/>
+  <text x="80" y="545" fill="#5d666f" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="18">SYNTEQ HACKATHON · BUILT FOR THE MACHINE READER</text>
+</svg>`;
+}
+
+export function shell({ title, description, body, head = '', nav = true, footer = true, ogImage = '/og.svg', challenger = null }) {
+  const banner = challenger && challenger.rival
+    ? `<div class="challenger-banner">
+        <span>⚔️ <strong>PVP CHALLENGE:</strong> Can your site beat <strong>${esc(challenger.rival)}</strong>${challenger.score != null ? ` (${esc(challenger.score)}/100)` : ''}?</span>
+        ${challenger.actionHref ? `<a class="btn primary" href="${esc(challenger.actionHref)}">${esc(challenger.actionLabel || 'Accept Challenge')}</a>` : ''}
+      </div>`
+    : '';
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -113,13 +196,14 @@ export function shell({ title, description, body, head = '', nav = true, footer 
 <meta name="description" content="${esc(description)}">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}">
 <meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<meta property="og:image" content="${esc(ogImage)}"><meta name="twitter:image" content="${esc(ogImage)}">
 <link rel="icon" href="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="%2308090a"/><circle cx="16" cy="16" r="6" fill="%23c6f24e"/></svg>')}">
 <style>${CSS}</style>${head}
 </head><body>
 <div class="wrap">
 ${nav ? `<header class="top"><a class="brand" href="/"><span class="dot"></span>AgentScore</a>
 <nav><a href="/index">The index</a><a href="/method">Method</a></nav></header>` : ''}
-${body}
+${banner}${body}
 ${footer ? `<footer class="bot"><span>AgentScore measures how usable a page is to a software agent, not to a person.</span><span>No tracking. Scanned pages are not stored.</span></footer>` : ''}
 </div></body></html>`;
 }

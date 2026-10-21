@@ -3,16 +3,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyze, HttpError } from './core/page.mjs';
-import { shell, esc } from './core/kit.mjs';
+import { shell, esc, quoteIntent, replyIntent, repostIntent, viralBar, renderOgSvg } from './core/kit.mjs';
 import { grade, verdict } from './core/score.mjs';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8080);
 const APP = process.env.PUBLIC_ORIGIN || 'https://agentrank.synteq.app';
-const ENTRY_POST_ID = process.env.ENTRY_POST_ID || '';
+const ENTRY_POST_ID = process.env.ENTRY_POST_ID || process.env.ENTRY_TWEET_ID || '2112839742496846116';
 
-const grokReplyUrl = (text) =>
-  `https://x.com/intent/post?text=${encodeURIComponent(text)}${ENTRY_POST_ID ? `&in_reply_to=${ENTRY_POST_ID}` : ''}`;
+const grokReplyUrl = (text) => replyIntent(text, ENTRY_POST_ID);
 
 const seed = JSON.parse(fs.readFileSync(path.join(__dir, 'data', 'seed.json'), 'utf8'));
 const board = new Map(seed.rows.map((r) => [r.slug, { ...r, live: false }]));
@@ -24,7 +23,7 @@ const slugOf = (u) => {
 };
 
 function shareUrl(text) {
-  return `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
+  return quoteIntent(text, ENTRY_POST_ID);
 }
 
 function boardShareText() {
@@ -86,8 +85,8 @@ const header = (active) => `<header class="top"><a class="brand" href="/"><span 
 
 const footer = `<footer class="bot"><span>Every score is computed from the HTML the provider actually ships — no models, no opinions, every point traceable to a check.</span><span>Built on <a href="https://synteq.com" style="color:var(--dimmer)">Synteq Apps</a>. Scanned pages are not stored.</span></footer>`;
 
-function page({ title, description, body }) {
-  return shell({ title, description, body, head: HEAD, nav: false, footer: false })
+function page({ title, description, body, ogImage = `${APP}/og.svg`, challenger = null }) {
+  return shell({ title, description, body, head: HEAD, nav: false, footer: false, ogImage, challenger })
     .replace('<div class="wrap">', `<div class="wrap">${header()}`)
     .replace('</div></body></html>', `${footer}</div></body></html>`);
 }
@@ -128,10 +127,11 @@ function boardPage() {
 <button class="btn2" type="submit">Score it</button>
 </form>
 
-<div style="display:flex;gap:10px;margin:4px 0 26px">
-<a class="btn-ghost2" href="${shareUrl(boardShareText())}" target="_blank" rel="noopener">Post the board on X</a>
-<a class="btn-ghost2" href="${grokReplyUrl(`@grok fact-check this: every cloud provider's homepage scored by what an AI agent can actually use. The board: ${APP}`)}" target="_blank" rel="noopener">Ask Grok to fact-check</a>
-<a class="btn-ghost2" href="/api/board" target="_blank" rel="noopener">JSON (yes, agents can read this too)</a>
+<div style="display:flex;gap:10px;margin:4px 0 26px;flex-wrap:wrap">
+<a class="btn2" href="${shareUrl(boardShareText())}" target="_blank" rel="noopener">Quote-Post the Board (+3 pts)</a>
+<a class="btn-ghost2" href="${grokReplyUrl(`@grok fact-check this: every cloud provider's homepage scored by what an AI agent can actually use. The board: ${APP}`)}" target="_blank" rel="noopener">Ask Grok in Thread (+2 pts)</a>
+<a class="btn-ghost2" href="${repostIntent(ENTRY_POST_ID)}" target="_blank" rel="noopener">1-Click Repost (+3 pts)</a>
+<a class="btn-ghost2" href="/api/board" target="_blank" rel="noopener">JSON</a>
 </div>
 
 <h2 id="board">The board</h2>
@@ -192,7 +192,7 @@ function scanPage(input, r) {
   const score = r.scored.score;
   const g = grade(score);
   const dimRows = r.scored.dims.map((d) => `<div class="dimrow"><span class="lbl">${esc(d.label)}</span>
-<span class="scorebar">${bar(Math.round(d.score * 100), 20)}</span><span class="pct">${Math.round(d.score * 100)}%</span></div>`).join('');
+<span class="scorebar">${bar(d.score, 20)}</span><span class="pct">${d.score}%</span></div>`).join('');
   const fails = r.scored.fails.slice(0, 3).map((f) => `<div class="fail-block"><strong>${esc(f.title)}</strong>
 <div class="fixline">${esc(f.detail)}${f.fix ? ` Fix: ${esc(f.fix)}` : ''}</div></div>`).join('');
   const rows = [...board.values()].filter((x) => x.ok).sort((a, b) => b.score - a.score);
@@ -255,7 +255,7 @@ async function rescan(r) {
     const upd = {
       ...r, ok: true, live: true,
       score: fresh.scored.score, grade: grade(fresh.scored.score),
-      dims: fresh.scored.dims.map((d) => ({ key: d.key, label: d.label, weight: d.weight, score: Math.round(d.score * 100) })),
+      dims: fresh.scored.dims.map((d) => ({ key: d.key, label: d.label, weight: d.weight, score: d.score })),
       fails: fresh.scored.fails.slice(0, 4).map((f) => ({ title: f.title, detail: f.detail, fix: f.fix })),
       warns: fresh.scored.warns.slice(0, 4).map((f) => ({ title: f.title, detail: f.detail, fix: f.fix })),
       tlDr: fresh.tlDr, fetchedAt: fresh.fetchedAt,
@@ -274,6 +274,16 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host || 'x'}`);
     const p = url.pathname;
 
+    if (p === '/og.svg') {
+      const svg = renderOgSvg({
+        app: 'AGENTRANK · CLOUD INDEX',
+        title: url.searchParams.get('title') || '30 Cloud Providers, Scored by an Agent',
+        score: url.searchParams.get('score') || 'NETLIFY 89 · SYNTEQ 81 · AWS 70',
+        subtitle: url.searchParams.get('sub') || 'DO 54 · Vultr 0 (refused) · Deterministic raw HTML rubric',
+        badge: 'CLOUD LEADERBOARD',
+      });
+      return send(res, 200, 'image/svg+xml; charset=utf-8', svg);
+    }
     if (p === '/') return send(res, 200, 'text/html; charset=utf-8', boardPage());
     if (p === '/method') return send(res, 200, 'text/html; charset=utf-8', methodPage);
     if (p === '/healthz') return send(res, 200, 'text/plain', 'ok');

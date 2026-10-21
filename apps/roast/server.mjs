@@ -1,12 +1,11 @@
 import http from 'node:http';
 import { analyze, HttpError } from './core/page.mjs';
-import { shell, esc } from './core/kit.mjs';
+import { shell, esc, quoteIntent, replyIntent, repostIntent, renderOgSvg } from './core/kit.mjs';
 
 const PORT = Number(process.env.PORT || 8080);
 const APP = process.env.PUBLIC_ORIGIN || 'https://fieldnotes.synteq.app';
-const ENTRY = process.env.ENTRY_TWEET_ID || '2112826524852519066';
-const intent = (text, reply) =>
-  'https://x.com/intent/post?text=' + encodeURIComponent(text) + (reply && ENTRY ? '&in_reply_to=' + ENTRY : '');
+const ENTRY = process.env.ENTRY_TWEET_ID || process.env.ENTRY_POST_ID || '2112826524852519066';
+const intent = (text, reply) => (reply ? replyIntent(text, ENTRY) : quoteIntent(text, ENTRY));
 
 function hash(s) {
   let h = 2166136261;
@@ -174,8 +173,9 @@ function render(r) {
   </div>
   <section class="term">${rows}</section>
   <div class="actions" style="padding:0;margin-top:24px">
-    <a class="btn primary" target="_blank" rel="noopener" href="${intent(shareText, false)}">Post the verdict</a>
-    <a class="btn" target="_blank" rel="noopener" href="${intent(grokText, true)}">Ask @grok if it was fair</a>
+    <a class="btn primary" target="_blank" rel="noopener" href="${intent(shareText, false)}">Quote-Post Verdict (+3 pts)</a>
+    <a class="btn" target="_blank" rel="noopener" href="${intent(grokText, true)}">Ask @grok in Thread (+2 pts)</a>
+    <a class="btn" target="_blank" rel="noopener" href="${repostIntent(ENTRY)}">1-Click Repost (+3 pts)</a>
     <a class="btn" href="/?url=${encodeURIComponent(p.url)}">Visit again</a>
     <a class="btn" href="/">Another site</a>
   </div>
@@ -236,6 +236,16 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(code, { 'content-type': type, 'cache-control': 'no-store' });
     res.end(body);
   };
+  if (url.pathname === '/og.svg') {
+    const svg = renderOgSvg({
+      app: 'FIELD NOTES',
+      title: url.searchParams.get('title') || 'First-Person Agent Diary',
+      score: url.searchParams.get('score') || 'HOUSE CALL',
+      subtitle: url.searchParams.get('sub') || 'What an AI agent understood, what it missed, and what it wrote down.',
+      badge: 'AGENT TRANSCRIPT',
+    });
+    return send(200, 'image/svg+xml; charset=utf-8', svg);
+  }
   if (url.pathname === '/healthz') return send(200, 'text/plain', 'ok');
   if (url.pathname === '/robots.txt') return send(200, 'text/plain', 'User-agent: *\nAllow: /\nSitemap: ' + APP + '/sitemap.xml\n');
   if (url.pathname === '/llms.txt') return send(200, 'text/plain; charset=utf-8', `# Field Notes

@@ -66,3 +66,16 @@ synteq deploy --app agentscore --image ghcr.io/dewars30/what-the-agent-sees-agen
 | sitefm | apps/sitefm | what-the-agent-sees-sitefm | hobby |
 | app-9ab057de | - | none | free (junk, from the failed drag-and-drop attempts) |
 | app-df0fa5a4 | - | none | hobby (junk, same) |
+
+## Money and the deadline that actually bites
+
+- Promo credit: $0 left. Five hobby apps at $5/mo = **$25 renewing 2026-11-21**.
+- One real charge so far: $5 to the Visa for `agentornot`.
+- **Before Nov 21, cancel the five hobby apps** (`fieldnotes`, `sitefm`, `agentrank`, `agentornot`, `app-df0fa5a4`) or they renew. Contest allegedly closes ~Oct 27, so this should be a clean cancel.
+- `synteq credits list` is the only dependable money signal from the CLI; `/billing/invoices` returns nothing.
+
+## Overnight operating rules (agreed with Tony, 2026-10-21 ~03:30 PT)
+
+Autonomous: reply to genuine engagement in his voice, retry a failed Grok summon once, redeploy any app that goes down via the image path, and concentrate effort on whichever post shows a real travel signal.
+
+Held for Tony: any new spend, any plan change, deleting apps, canceling apps, billing, credentials, and any claim I cannot verify from the scan data.

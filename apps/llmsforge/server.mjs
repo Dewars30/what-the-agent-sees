@@ -1,15 +1,14 @@
 import http from 'node:http';
 import { analyze, HttpError } from './core/page.mjs';
-import { shell, esc } from './core/kit.mjs';
+import { shell, esc, quoteIntent, replyIntent, repostIntent, renderOgSvg } from './core/kit.mjs';
 import { grade, verdict } from './core/score.mjs';
 
 const PORT = Number(process.env.PORT || 8080);
-const APP = process.env.PUBLIC_ORIGIN || 'https://llmsforge.synteq.app';
-const ENTRY_POST_ID = process.env.ENTRY_POST_ID || '';
+const APP = process.env.PUBLIC_ORIGIN || 'https://app-df0fa5a4.synteq.app';
+const ENTRY_POST_ID = process.env.ENTRY_POST_ID || process.env.ENTRY_TWEET_ID || '2112840019790672070';
 
-const shareUrl = (text) => `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
-const grokReplyUrl = (text) =>
-  `https://x.com/intent/post?text=${encodeURIComponent(text)}${ENTRY_POST_ID ? `&in_reply_to=${ENTRY_POST_ID}` : ''}`;
+const shareUrl = (text) => quoteIntent(text, ENTRY_POST_ID);
+const grokReplyUrl = (text) => replyIntent(text, ENTRY_POST_ID);
 
 const SECTION_RULES = [
   { name: 'Docs', re: /docs?|documentation|reference|api|guide|learn|developers?|help|support|knowledge|manual/i },
@@ -142,8 +141,9 @@ function homePage() {
 <button class="btn2" type="submit">Forge my llms.txt</button>
 </form>
 <div style="display:flex;gap:10px;margin:6px 0 30px;flex-wrap:wrap">
-<a class="btn-ghost2" href="${shareUrl(`Every site needs an llms.txt — the file that tells AI agents what you are and where the good stuff is. Forge yours in seconds: ${APP}`)}" target="_blank" rel="noopener">Post this on X</a>
-<a class="btn-ghost2" href="${grokReplyUrl(`@grok does every site need an llms.txt? This tool forges one for any domain in seconds: ${APP}`)}" target="_blank" rel="noopener">Ask Grok</a>
+<a class="btn-ghost2" href="${shareUrl(`Every site needs an llms.txt — the file that tells AI agents what you are and where the good stuff is. Forge yours in seconds: ${APP}`)}" target="_blank" rel="noopener">Quote-Post on X (+3 pts)</a>
+<a class="btn-ghost2" href="${grokReplyUrl(`@grok does every site need an llms.txt? This tool forges one for any domain in seconds: ${APP}`)}" target="_blank" rel="noopener">Ask Grok in Thread (+2 pts)</a>
+<a class="btn-ghost2" href="${repostIntent(ENTRY_POST_ID)}" target="_blank" rel="noopener">1-Click Repost (+3 pts)</a>
 <a class="btn-ghost2" href="/forge?url=synteq.com">See it forge synteq.com</a>
 </div>
 <h2 id="why">Why it matters</h2>
@@ -213,6 +213,16 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host || 'x'}`);
     const p = url.pathname;
 
+    if (p === '/og.svg') {
+      const svg = renderOgSvg({
+        app: 'LLMS FORGE',
+        title: url.searchParams.get('title') || 'Forge /llms.txt for Any Website',
+        score: url.searchParams.get('score') || '/llms.txt',
+        subtitle: url.searchParams.get('sub') || 'Machine-readable summary + agent blocker report in one GET',
+        badge: 'LLMSTXT GENERATOR',
+      });
+      return send(res, 200, 'image/svg+xml; charset=utf-8', svg);
+    }
     if (p === '/') return send(res, 200, 'text/html; charset=utf-8', homePage());
     if (p === '/healthz') return send(res, 200, 'text/plain', 'ok');
     if (p === '/llms.txt') {

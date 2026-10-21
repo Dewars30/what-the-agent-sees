@@ -24,7 +24,7 @@ async function scoreOne(p) {
       url: p.url,
       score: r.scored.score,
       grade: grade(r.scored.score),
-      dims: r.scored.dims.map((d) => ({ key: d.key, label: d.label, weight: d.weight, score: Math.round(d.score * 100) })),
+      dims: r.scored.dims.map((d) => ({ key: d.key, label: d.label, weight: d.weight, score: d.score })),
       fails: r.scored.fails.slice(0, 4).map((f) => ({ title: f.title, detail: f.detail, fix: f.fix })),
       warns: r.scored.warns.slice(0, 4).map((f) => ({ title: f.title, detail: f.detail, fix: f.fix })),
       tlDr: r.tlDr,

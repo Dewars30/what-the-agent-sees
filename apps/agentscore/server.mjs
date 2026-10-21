@@ -3,14 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyze, HttpError } from './core/page.mjs';
-import { shell, esc } from './core/kit.mjs';
+import { shell, esc, quoteIntent, replyIntent, repostIntent, viralBar, renderOgSvg } from './core/kit.mjs';
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8080);
 const APP = process.env.PUBLIC_ORIGIN || 'https://agentscore.synteq.app';
-const ENTRY = process.env.ENTRY_TWEET_ID || '2112816202309374003';
-const intent = (text, reply) =>
-  'https://x.com/intent/post?text=' + encodeURIComponent(text) + (reply && ENTRY ? '&in_reply_to=' + ENTRY : '');
+const ENTRY = process.env.ENTRY_TWEET_ID || process.env.ENTRY_POST_ID || '2112816202309374003';
+const intent = (text, reply) => (reply ? replyIntent(text, ENTRY) : quoteIntent(text, ENTRY));
 
 function loadRefused() {
   try {
@@ -55,7 +54,7 @@ function findingRow(f) {
 
 function resultView(r, rawInput) {
   const { scored, page } = r;
-  const shareText = `${page.host} scores ${scored.score}/100 for AI agents: ${scored.verdict}.\n\nScore yours: ${APP}`;
+  const shareText = `${page.host} scores ${scored.score}/100 for AI agents (${scored.verdict}).\n\nCan your site beat ${page.host}'s ${scored.score}/100? ${APP}/?beat=${scored.score}&rival=${encodeURIComponent(page.host)}`;
   const grokText = `${page.host} scores ${scored.score}/100 on how usable it is to an AI agent, with ${scored.fails.length} blockers. @grok verify this\n\nscored by ${APP}/?url=${encodeURIComponent(page.url)}`;
   const dims = scored.dims
     .map((d) => {
@@ -75,6 +74,7 @@ function resultView(r, rawInput) {
   return shell({
     title: `${page.host} — ${scored.score}/100 · AgentScore`,
     description: `${page.host} scores ${scored.score}/100 for how well an AI agent can read and act on it. ${scored.verdict}.`,
+    ogImage: `${APP}/og.svg?title=${encodeURIComponent(page.host)}&score=${encodeURIComponent(`${scored.score}/100`)}&sub=${encodeURIComponent(`Grade ${scored.grade} · ${scored.verdict}`)}`,
     body: `
 <main>
   <p class="kicker" style="margin:34px 0 0">Report · ${esc(new Date(r.fetchedAt).toUTCString().replace('GMT', 'UTC'))}</p>
@@ -104,11 +104,12 @@ function resultView(r, rawInput) {
       </div>
     </div>
     <div class="actions">
-      <a class="btn primary" target="_blank" rel="noopener" href="${intent(shareText, false)}">Post my score</a>
-      <a class="btn" target="_blank" rel="noopener" href="${intent(grokText, true)}">Ask @grok to check it</a>
+      <a class="btn primary" target="_blank" rel="noopener" href="${intent(shareText, false)}">Quote-Post Score (+3 pts)</a>
+      <a class="btn" target="_blank" rel="noopener" href="${intent(grokText, true)}">Ask @grok in Thread (+2 pts)</a>
+      <a class="btn" target="_blank" rel="noopener" href="${repostIntent(ENTRY)}">1-Click Repost (+3 pts)</a>
+      <a class="btn" href="https://agentornot.synteq.app/duel?a=${encodeURIComponent(page.host)}&b=synteq.com">1v1 Cage Match →</a>
       <a class="btn" href="/?url=${encodeURIComponent(page.url)}">Rescan</a>
       <a class="btn" href="/">Check another site</a>
-      <a class="btn" href="/method">How this is scored</a>
     </div>
   </section>
   <section class="card pad">
@@ -187,7 +188,7 @@ lang: (unset)  headings: 0  links: 0  forms: 0  images: 0
   });
 }
 
-function landing(err) {
+function landing(err, challenger = null) {
   const idx = loadIndex();
   const top = idx.rows.slice(0, 5);
   const rows = top
@@ -196,6 +197,8 @@ function landing(err) {
   return shell({
     title: 'AgentScore — how your site looks to an AI agent',
     description: 'Paste a URL. Get a 0-100 score on whether an AI agent can actually read and act on your site, plus the exact fixes.',
+    ogImage: `${APP}/og.svg`,
+    challenger,
     body: `<main>
   <h1 class="hero">Your site, as an<br><span class="accent">AI agent</span> sees it.</h1>
   <p class="sub">Agents do not see your design. They see headings, link text, form labels, alt text, robots rules and a document that may be empty until JavaScript runs. Paste a URL and get a 0-100 score, the raw view the agent gets, and the fixes that move the number.</p>
@@ -302,6 +305,16 @@ const server = http.createServer(async (req, res) => {
     res.end(body);
   };
   try {
+    if (url.pathname === '/og.svg') {
+      const svg = renderOgSvg({
+        app: 'AGENTSCORE',
+        title: url.searchParams.get('title') || 'Your site, as an AI agent sees it',
+        score: url.searchParams.get('score') || '0 - 100',
+        subtitle: url.searchParams.get('sub') || '7 weighted dimensions · 22 developer homepages indexed · zero models',
+        badge: 'AGENT READABILITY',
+      });
+      return send(200, 'image/svg+xml; charset=utf-8', svg);
+    }
     if (url.pathname === '/healthz') return send(200, 'text/plain', 'ok');
     if (url.pathname === '/robots.txt') return send(200, 'text/plain', 'User-agent: *\nAllow: /\nSitemap: ' + APP + '/sitemap.xml\n');
     if (url.pathname === '/llms.txt') {
@@ -342,7 +355,10 @@ Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking; scan
     }
     if (url.pathname === '/') {
       const target = url.searchParams.get('url');
-      if (!target) return send(200, 'text/html; charset=utf-8', landing());
+      const rival = url.searchParams.get('rival');
+      const beat = url.searchParams.get('beat');
+      const challenger = rival ? { rival, score: beat } : null;
+      if (!target) return send(200, 'text/html; charset=utf-8', landing(null, challenger));
       try {
         const r = await analyze(target);
         if (r.blocked) return send(200, 'text/html; charset=utf-8', blockedView(r, target));
