@@ -40,6 +40,8 @@ jobs:
           file: apps/${{ matrix.app }}/Dockerfile
           platforms: linux/amd64
           push: true
+          build-args: |
+            GIT_SHA=${{ github.sha }}
           tags: |
             ghcr.io/dewars30/what-the-agent-sees-${{ matrix.app }}:latest
             ghcr.io/dewars30/what-the-agent-sees-${{ matrix.app }}:${{ github.sha }}

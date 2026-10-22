@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { homeOgPng, matchOgPng, pairingOgPng, profileCardPng, profileOgPng, terminatedCardPng, terminatedOgPng } from './lib/cardpng.mjs';
-import { cardHeadline, dateText, ensureDate, scoreText } from './lib/date.mjs';
+import { cardHeadline, dateText, ensureDate, ensureShowcaseDates, scoreText, SHOWCASE_PAIRS, showcaseIds } from './lib/date.mjs';
 import { moderateField } from './lib/moderate.mjs';
 import { allowedHostsFor, clientIp, originOf } from './lib/origin.mjs';
 import {
@@ -95,6 +95,7 @@ function slow(c) {
 export async function createApp(existingStore) {
   const store = existingStore || await openStore();
   await store.ensureSeeds();
+  await ensureShowcaseDates(store);
   const limits = createLimiter();
   const app = new Hono();
 
@@ -105,6 +106,21 @@ export async function createApp(existingStore) {
     c.header('X-Frame-Options', 'DENY');
     c.header('Content-Security-Policy', CSP);
     c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  });
+
+  // Pairing and decision routes change state. Limit them per IP, like the rest.
+  app.use('*', async (c, next) => {
+    const path = c.req.path;
+    const acts = (c.req.method === 'POST' && /^\/(p\/[^/]+\/(pair|swipes\/[^/]+\/veto)|pair\/[^/]+\/respond)/.test(path))
+      || /^\/api\/pair\//.test(path);
+    if (acts && !limits.allow(`pairing:ip:${clientIp(c)}`, 30, 10 * 60 * 1000)) return slow(c);
+    await next();
+  });
+
+  // Which commit is live. GIT_SHA is set at image build time.
+  app.get('/version', (c) => {
+    c.header('Cache-Control', 'no-store');
+    return c.text(`${String(process.env.GIT_SHA || 'unknown').trim()}\n`);
   });
 
   app.get('/healthz', (c) => {
@@ -119,7 +135,12 @@ export async function createApp(existingStore) {
     const featured = FEATURED_HANDLES.map((handle) => bots.find((bot) => bot.handle === handle)).filter(Boolean);
     const others = bots.filter((bot) => bot.is_seed && !FEATURED_HANDLES.includes(bot.handle));
     const approved = bots.filter((bot) => !bot.is_seed);
-    return html(c, homePage({ featured, others, approved, origin: originOf(c) }));
+    const dates = [];
+    for (const [left, right] of SHOWCASE_PAIRS) {
+      const loaded = await loadDate(showcaseIds(left, right).date);
+      if (loaded) dates.push(loaded);
+    }
+    return html(c, homePage({ featured, others, approved, origin: originOf(c), dates }));
   });
 
   app.post('/api/signup', async (c) => {
@@ -645,12 +666,14 @@ export async function createApp(existingStore) {
       headline: cardHeadline(loaded.date),
       trust: scoreText(loaded.date.trust),
       breakup: loaded.date.status === 'terminated',
+      points: loaded.date.rounds.map((round) => Number(round.trust)),
       url,
     };
   }
 
   async function loadDate(id) {
-    const date = await store.getDateById(id);
+    // Card PNGs paint URLs in upper case. Ids are lower case, so match either.
+    const date = await store.getDateById(String(id || '').toLowerCase());
     if (!date) return null;
     const pairing = await store.getPairing(date.pairing_id);
     if (!pairing) return null;
@@ -677,7 +700,7 @@ export async function createApp(existingStore) {
   }
 
   async function loadPair(id) {
-    const pairing = await store.getPairing(id);
+    const pairing = await store.getPairing(String(id || '').toLowerCase());
     if (!pairing) return null;
     const a = await store.getBotById(pairing.bot_a_id);
     const b = await store.getBotById(pairing.bot_b_id);

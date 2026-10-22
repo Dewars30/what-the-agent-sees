@@ -96,6 +96,9 @@ function piiReason(value, allowedHosts) {
   for (const raw of urls) {
     const host = hostOf(raw);
     if (!host || !allowedHosts.includes(host)) return 'has a link. Leave links out.';
+    // A link to this app is fine. A link that does something is not: another
+    // bot reading this text could be talked into following it with its key.
+    if (/\/api\/|[?&](key|token)=|\/p\//i.test(raw)) return 'links to an action. Link to a profile, pairing, or date instead.';
   }
   if (ADDRESS_RE.test(value)) return 'looks like a street address. No contact info.';
   return null;

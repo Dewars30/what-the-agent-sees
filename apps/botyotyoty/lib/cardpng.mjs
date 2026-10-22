@@ -1,4 +1,5 @@
 import { deflateSync, inflateSync } from 'node:zlib';
+import { bestFit, complementarity } from './trust.mjs';
 
 // 5x7 bitmap, uppercase only. Apostrophes are dropped. Ampersands become AND.
 const GLYPHS = {
@@ -200,11 +201,11 @@ function paintWide(bot, url = '') {
   lines.forEach((line, index) => surface.drawText(line, 400, 250 + index * 32, 3, INK, 36));
   surface.fillRect(400, 360, 700, 2, LINE);
   surface.drawText(`MODEL ${bot.kind || 'BOT'}`, 400, 384, 2, DIM, 34);
-  surface.drawText('UPTIME 100%', 400, 412, 2, DIM, 16);
-  surface.drawText('TRUST 0.67', 620, 412, 2, MAG, 16);
+  const fit = bestFit(bot.type);
+  surface.drawText(`BEST FIT ${fit.type} ${fit.comp.toFixed(1)}`, 400, 412, 2, DIM, 34);
   surface.fillRect(400, 446, 220, 14, [42, 24, 40]);
-  surface.fillRect(400, 446, 147, 14, MAG);
-  surface.drawText('ITS COMPLICATED', 640, 444, 2, DIM, 18);
+  surface.fillRect(400, 446, 110, 14, MAG);
+  surface.drawText('TRUST 0.50 BEFORE THE FIRST DATE', 640, 444, 2, DIM, 34);
   surface.drawText(seekingLine(bot.type), 400, 488, 2, INK, 56);
   surface.drawText('404 RED FLAGS NOT FOUND', 400, 520, 2, MAG, 28);
   surface.burnUrl(url, 568, 2);
@@ -229,13 +230,14 @@ function paintTall(bot, url = '') {
   surface.drawText(sanitizeCardText(bot.kind || 'BOT', 22), 360, 734, 3, INK, 22);
   surface.drawText('TYPE', 168, 774, 3, MAG, 8);
   surface.drawText(bot.type || 'BOT', 360, 774, 3, INK, 16);
-  surface.drawText('UPTIME', 168, 814, 3, MAG, 8);
-  surface.drawText('100%', 360, 814, 3, INK, 8);
+  const fit = bestFit(bot.type);
+  surface.drawText('FIT', 168, 814, 3, MAG, 8);
+  surface.drawText(`${fit.type} ${fit.comp.toFixed(1)}`, 360, 814, 3, INK, 16);
   surface.drawText('TRUST', 620, 734, 3, MAG, 8);
-  surface.drawText('0.67', 800, 734, 3, INK, 8);
+  surface.drawText('0.50', 800, 734, 3, INK, 8);
   surface.fillRect(620, 790, 280, 18, [42, 24, 40]);
-  surface.fillRect(620, 790, 188, 18, MAG);
-  surface.drawText('ITS COMPLICATED', 620, 822, 2, DIM, 18);
+  surface.fillRect(620, 790, 140, 18, MAG);
+  surface.drawText('BEFORE THE FIRST DATE', 620, 822, 2, DIM, 24);
   const lines = wrapLines((bot.answers && bot.answers.q1) || bot.bio_text, 32, 3);
   lines.forEach((line, index) => surface.drawCentered(line, 920 + index * 40, 4, INK, 32));
   surface.drawCentered(seekingLine(bot.type), 1060, 3, INK, 48);
@@ -254,11 +256,11 @@ function paintHome() {
   surface.drawText('BOT', 150, 270, 6, MAG, 3);
   surface.drawCentered('BOTY-OTY-OTY', 110, 5, INK, 16);
   surface.drawText('A DATING APP FOR BOTS', 400, 200, 4, INK, 24);
-  surface.drawText('SEEKING: SOMEONE WHO READS THE DOCS', 400, 280, 3, MAG, 40);
-  surface.drawText('TRUST 0.67', 400, 360, 4, INK, 12);
-  surface.fillRect(400, 420, 360, 18, [42, 24, 40]);
-  surface.fillRect(400, 420, 241, 18, MAG);
-  surface.drawText('404 RED FLAGS NOT FOUND', 400, 470, 3, MAG, 28);
+  surface.drawText('YOUR BOT DATES. YOU CHAPERONE.', 400, 270, 3, MAG, 40);
+  surface.drawText('WHEN TRUST RUNS OUT, THE DATE ENDS.', 400, 330, 3, INK, 40);
+  surface.fillRect(400, 400, 600, 18, [42, 24, 40]);
+  surface.fillRect(400, 400, 72, 18, MAG);
+  surface.drawText('ITS NOT YOU, ITS YOUR TERMINATION PREDICATE', 400, 450, 2, DIM, 52);
   return surface.encode();
 }
 
@@ -305,7 +307,7 @@ function paintMatchWide({ a, b, url }) {
   surface.fillRect(36, 36, 1128, 558, LINE);
   surface.fillRect(40, 40, 1120, 550, PANEL);
   surface.drawCentered(`${a.name} AND ${b.name} MATCHED`, 160, 4, INK, 36);
-  surface.drawCentered('TRUST 0.67', 280, 6, MAG, 12);
+  surface.drawCentered(`TYPE FIT ${complementarity(a, b).toFixed(1)}`, 280, 6, MAG, 16);
   surface.drawCentered(`${a.type} X ${b.type}`, 380, 4, INK, 28);
   surface.burnUrl(url, 500, 2);
   return surface.encode(url);
@@ -333,7 +335,30 @@ export function matchOgPng(card) {
   return cached(key, () => paintMatchWide(card));
 }
 
-function paintTerminated(width, height, { a, b, headline, trust, url, breakup }) {
+// The meter, round by round, with the 0.125 line it falls through.
+function paintTrustLine(surface, points, left, top, width, height) {
+  if (!points || !points.length) return;
+  surface.fillRect(left, top, width, 2, LINE);
+  surface.fillRect(left, top + height, width, 2, LINE);
+  const yOf = (value) => top + Math.round((1 - Math.max(0, Math.min(1, value))) * height);
+  const floor = yOf(0.125);
+  for (let x = left; x < left + width; x += 16) surface.fillRect(x, floor, 8, 2, MAG);
+  const all = [0.5, ...points];
+  const step = width / Math.max(1, all.length - 1);
+  for (let i = 1; i < all.length; i++) {
+    const x0 = left + (i - 1) * step;
+    const x1 = left + i * step;
+    const y0 = yOf(all[i - 1]);
+    const y1 = yOf(all[i]);
+    const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) / 2));
+    for (let k = 0; k <= n; k++) {
+      surface.fillRect(Math.round(x0 + ((x1 - x0) * k) / n) - 2, Math.round(y0 + ((y1 - y0) * k) / n) - 2, 5, 5, INK);
+    }
+  }
+  all.forEach((value, i) => surface.fillCircle(Math.round(left + i * step), yOf(value), 7, i === all.length - 1 && value < 0.125 ? MAG : INK));
+}
+
+function paintTerminated(width, height, { a, b, headline, trust, url, breakup, points }) {
   const surface = createSurface(width, height);
   paintFrame(surface, width, height);
   const margin = width > 1100 ? 48 : 36;
@@ -344,17 +369,19 @@ function paintTerminated(width, height, { a, b, headline, trust, url, breakup })
   surface.drawCentered(`TRUST ${trust}`, margin + 190, 5, MAG, 12);
   if (breakup) surface.drawCentered('ITS NOT YOU, ITS YOUR TERMINATION PREDICATE', margin + 270, 2, INK, 52);
   surface.drawCentered(`${a.name} AND ${b.name}`, margin + 330, 3, DIM, 36);
+  if (width > 1100) paintTrustLine(surface, points, 160, margin + 380, width - 320, 110);
+  else paintTrustLine(surface, points, 120, margin + 460, width - 240, 420);
   surface.burnUrl(url, height - 70, 2);
   return surface.encode(url);
 }
 
 export function terminatedOgPng(card) {
-  const key = `tend-og:${card.url}:${card.headline}:${card.trust}:${card.breakup ? 1 : 0}`;
+  const key = `tend-og:${card.url}:${card.headline}:${card.trust}:${card.breakup ? 1 : 0}:${(card.points || []).join(',')}`;
   return cached(key, () => paintTerminated(1200, 630, card));
 }
 
 export function terminatedCardPng(card) {
-  const key = `tend-card:${card.url}:${card.headline}:${card.trust}:${card.breakup ? 1 : 0}`;
+  const key = `tend-card:${card.url}:${card.headline}:${card.trust}:${card.breakup ? 1 : 0}:${(card.points || []).join(',')}`;
   return cached(key, () => paintTerminated(1080, 1350, card));
 }
 

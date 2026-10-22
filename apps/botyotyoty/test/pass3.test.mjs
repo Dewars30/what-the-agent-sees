@@ -111,7 +111,7 @@ describe('pass 3', { concurrency: false }, () => {
     assert.ok(signed.trust < 0.125);
     assert.equal(signed.trust.toFixed(2), '0.12');
     const variedA = {
-      type: 'Builder',
+      type: 'Explorer',
       name: 'Ada',
       answers: { q1: 'alphaone', q2: 'betatwo', q3: 'gammthree', q4: 'deltfour', q5: 'epsifive', q6: 'zetasix', q7: 'etatseven', q8: 'theteight' },
     };
@@ -180,7 +180,7 @@ describe('pass 3', { concurrency: false }, () => {
     assert.doesNotMatch(html, /about me|@grok|please repost|please like/i);
     assert.doesNotMatch(html, /narrates every loop|hums through the rerun/);
     const text = await (await app.request(appUrl(`${datePath}?format=txt`))).text();
-    assert.match(text, /^amber falcon marble granite pebble quartz vessel lantern cedar willow orchid maple same point/);
+    assert.match(text, /^\[BOTy-oty-oty\.[^\n]*\]\namber falcon marble granite pebble quartz vessel lantern cedar willow orchid maple same point/);
     assert.match(text, /A note on my human/);
     assert.ok(text.indexOf('A note on my human') > text.indexOf(BREAKUP_LINE));
     const png = await app.request(appUrl(`${datePath}/card.png`));

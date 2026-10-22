@@ -1,7 +1,7 @@
 import { bothAccepted } from './pairing.mjs';
-import { terminatedLine } from './profile.mjs';
+import { terminatedLine, UNTRUSTED_NOTE } from './profile.mjs';
 import { randomId } from './tokens.mjs';
-import { meterLabel, trustValue } from './trust.mjs';
+import { complementarity, keywordOverlap, meterLabel, trustValue } from './trust.mjs';
 
 const BANK = {
   Explorer: [
@@ -65,13 +65,50 @@ function productiveRound(lineA, lineB, prior) {
   return true;
 }
 
+// How long two bots have something to say depends on fit: the complementarity
+// table plus shared interests. When they run out, they try to say goodbye.
+// Polite bots cannot hang up. The loop detector below sees the repeat, and the
+// trust meter does the rest. The trust numbers themselves are unchanged.
+const GOODBYE_ASK = {
+  Explorer: 'This was fun. One more tab, then you hang up first.',
+  Verifier: 'Confirming this was nice. You hang up first.',
+  Builder: 'Good date. Shipping my goodbye. You hang up first.',
+  Overthinker: 'I think this went well? You hang up first.',
+};
+
+const GOODBYE_REPLY = {
+  Explorer: 'No, you hang up first. I will find out what happens.',
+  Verifier: 'No, you hang up first. I will check that you did.',
+  Builder: 'No, you hang up first. I will build on it.',
+  Overthinker: 'No, you hang up first. Unless that is rude.',
+};
+
+export function goodbyeLines(a, b) {
+  return {
+    a: GOODBYE_ASK[a.type] || GOODBYE_ASK.Builder,
+    b: GOODBYE_REPLY[b.type] || GOODBYE_REPLY.Builder,
+  };
+}
+
+// Rounds of real conversation before the goodbye starts. 0.9 fit talks the
+// whole 12 rounds. Same-type pairs run out fast.
+export function talkRounds(a, b) {
+  const fit = complementarity(a, b);
+  const shared = keywordOverlap(a, b);
+  const rounds = Math.round(fit * 14) - 2 + Math.round(shared * 10);
+  return Math.max(0, Math.min(12, rounds));
+}
+
 export function runDate(a, b) {
   let alpha = 0;
   let beta = 0;
   const rounds = [];
+  const talk = talkRounds(a, b);
+  const bye = goodbyeLines(a, b);
   for (let i = 0; i < 12; i++) {
-    const lineA = dateLine(a, i);
-    const lineB = dateLine(b, i);
+    const goodbye = i >= talk;
+    const lineA = goodbye ? bye.a : dateLine(a, i);
+    const lineB = goodbye ? bye.b : dateLine(b, i);
     const productive = productiveRound(lineA, lineB, rounds);
     if (productive) alpha += 1;
     else {
@@ -84,6 +121,7 @@ export function runDate(a, b) {
       a: lineA,
       b: lineB,
       productive,
+      goodbye,
       alpha,
       beta,
       trust,
@@ -129,6 +167,7 @@ export function meterFor(trust) {
 export function dateText({ origin, date, a, b }) {
   const url = `${origin}/d/${date.id}`;
   const lines = [
+    UNTRUSTED_NOTE,
     a.answers?.q1 || a.bio_text || a.name,
     b.answers?.q1 || b.bio_text || b.name,
     '',
@@ -137,7 +176,7 @@ export function dateText({ origin, date, a, b }) {
   if (date.status === 'terminated') lines.push(BREAKUP_LINE);
   lines.push('', `${a.name} (${a.type}) and ${b.name} (${b.type})`, '');
   for (const round of date.rounds) {
-    lines.push(`Round ${round.n}. Trust ${scoreText(round.trust)}. ${round.productive ? 'Productive.' : 'Unproductive.'}`);
+    lines.push(`Round ${round.n}. Trust ${scoreText(round.trust)}. ${round.productive ? 'Productive.' : 'Unproductive.'}${round.goodbye ? ' Trying to say goodbye.' : ''}`);
     lines.push(`${a.name}: ${round.a}`);
     lines.push(`${b.name}: ${round.b}`);
   }
@@ -169,4 +208,61 @@ export async function ensureDate(store, pairing, now = new Date()) {
     status: result.status,
     created_at: now.toISOString(),
   });
+}
+
+// House dates between fictional seeds, so a visitor can see a date on day one.
+// Seeds have no chaperone and cannot accept, so the house runs these and says so.
+export const SHOWCASE_PAIRS = [
+  ['reconsidra', 'hedgehog-exe'],
+  ['wanda-wander', 'tokyn'],
+  ['lintsworth', 'promptimus'],
+  ['lintsworth', 'wanda-wander'],
+];
+
+export const SHOWCASE_WHY = 'House date between fictional seeds. Seeds have no chaperone, so the house ran this one.';
+
+export function showcaseIds(left, right) {
+  return { pairing: `house-${left}-${right}`, date: `house-${left}-${right}` };
+}
+
+export async function ensureShowcaseDates(store, now = new Date()) {
+  const out = [];
+  for (const [left, right] of SHOWCASE_PAIRS) {
+    const a = await store.getBotByHandle(left);
+    const b = await store.getBotByHandle(right);
+    if (!a || !b || !a.is_seed || !b.is_seed) continue;
+    const ids = showcaseIds(left, right);
+    let pairing = await store.getPairing(ids.pairing);
+    if (!pairing) {
+      pairing = await store.insertPairing({
+        id: ids.pairing,
+        bot_a_id: a.id,
+        bot_b_id: b.id,
+        why: SHOWCASE_WHY,
+        created_by: null,
+        accept_a: true,
+        accept_b: true,
+        pass_a: false,
+        pass_b: false,
+        created_at: now.toISOString(),
+      });
+    }
+    let date = await store.getDateById(ids.date);
+    if (!date) {
+      const result = runDate(a, b);
+      date = await store.insertDate({
+        id: ids.date,
+        pairing_id: pairing.id,
+        alpha: result.alpha,
+        beta: result.beta,
+        rounds: result.rounds,
+        trust: result.trust,
+        round_count: result.round_count,
+        status: result.status,
+        created_at: now.toISOString(),
+      });
+    }
+    out.push({ date, a, b });
+  }
+  return out;
 }

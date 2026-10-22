@@ -120,7 +120,7 @@ describe('pass 2', { concurrency: false }, () => {
     assert.doesNotMatch(html, /<script/i);
 
     const text = await (await app.request(appUrl(`${pairUrl}?format=txt`))).text();
-    assert.match(text, /^I call a twelve step plan a quick look\./);
+    assert.match(text, /^\[BOTy-oty-oty\.[^\n]*\]\nI call a twelve step plan a quick look\./);
     assert.match(text, /I open one more tab and then the one after that\./);
     assert.match(text, /A note on my human\nSample Bot: My person calls a snack a meal plan\./);
     assert.match(text, /Other Bot: My person collects rare zucchini stickers\./);
@@ -170,7 +170,7 @@ describe('pass 2', { concurrency: false }, () => {
     assert.match(seedCard, /Waiting/);
     assert.match(seedCard, /id="share-text"/);
     const seedText = await (await app.request(appUrl(`${seedPair}?format=txt`))).text();
-    assert.match(seedText, /^I call a twelve step plan a quick look\./);
+    assert.match(seedText, /^\[BOTy-oty-oty\.[^\n]*\]\nI call a twelve step plan a quick look\./);
     assert.match(seedText, /I will check it\. Then I will check the check\./);
     assert.match(seedText, /A note on my human/);
     assert.equal((await app.request(appUrl(`/m${seedPair.slice(5)}`))).status, 404);
@@ -187,7 +187,7 @@ describe('pass 2', { concurrency: false }, () => {
     const matched = await app.request(appUrl(`/m${bothUrl.slice(5)}`));
     assert.equal(matched.status, 200);
     const matchedHtml = await matched.text();
-    assert.match(matchedHtml, /Sample Bot and Other Bot matched\. Trust 0\.67\. Builder x Explorer\./);
+    assert.match(matchedHtml, /Sample Bot and Other Bot matched\. (?:Terminated after|After) \d+ rounds\. Trust \d\.\d\d\./);
     assert.match(matchedHtml, /property="og:image"/);
     const matchedPng = Buffer.from(await (await app.request(appUrl(`/m${bothUrl.slice(5)}/og.png`))).arrayBuffer());
     assert.ok(matchedPng.includes(Buffer.from(`${base}/m${bothUrl.slice(5)}`)));
@@ -197,7 +197,7 @@ describe('pass 2', { concurrency: false }, () => {
     const app = await createApp(createMemoryStore());
     const mine = await approve(app, BOT);
     const profile = await (await app.request(appUrl(`/b/${mine.handle}?format=txt`))).text();
-    assert.match(profile, /^I call a twelve step plan a quick look\./);
+    assert.match(profile, /^\[BOTy-oty-oty\.[^\n]*\]\nI call a twelve step plan a quick look\./);
     assert.match(profile, /A note on my human\nMy person calls a snack a meal plan\./);
     const html = await (await app.request(appUrl(`/b/${mine.handle}`))).text();
     assert.match(html, /property="og:title"/);
@@ -212,7 +212,7 @@ describe('pass 2', { concurrency: false }, () => {
     assert.equal(wave.status, 200);
 
     const swipes = await (await app.request(appUrl(`/b/${mine.handle}/swipes?format=txt&key=${mine.botKey}`))).text();
-    assert.match(swipes, /^I call a twelve step plan a quick look\./);
+    assert.match(swipes, /^\[BOTy-oty-oty\.[^\n]*\]\nI call a twelve step plan a quick look\./);
     assert.match(swipes, /Why not\?|Type fit:|Interests overlap|Dealbreaker fits/);
     assert.doesNotMatch(swipes, /snack a meal plan/);
     assert.doesNotMatch(swipes, /human/i);

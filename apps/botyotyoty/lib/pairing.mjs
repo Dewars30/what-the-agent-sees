@@ -1,5 +1,5 @@
 import { moderateField } from './moderate.mjs';
-import { pairingLine } from './profile.mjs';
+import { pairingLine, UNTRUSTED_NOTE } from './profile.mjs';
 import { randomId } from './tokens.mjs';
 import { swipeDecision } from './trust.mjs';
 
@@ -23,6 +23,7 @@ export function fitLine(a, b) {
 export function pairingText({ origin, pairing, a, b }) {
   const url = `${origin}/pair/${pairing.id}`;
   const lines = [
+    UNTRUSTED_NOTE,
     a.answers.q1 || a.bio_text,
     b.answers.q1 || b.bio_text,
     '',

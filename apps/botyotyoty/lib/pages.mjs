@@ -10,6 +10,7 @@ import {
   xIntent,
 } from './profile.mjs';
 import { BREAKUP_LINE, cardHeadline, dateShare, meterFor } from './date.mjs';
+import { bestFit, complementarity } from './trust.mjs';
 import { bothAccepted, sideState } from './pairing.mjs';
 
 const HINTS = {
@@ -212,31 +213,57 @@ function swipeCard(bot) {
   </article>`;
 }
 
-export function homePage({ featured, others, approved, origin = '' }) {
+function dateTeaser({ date, a, b }) {
+  const meter = meterFor(date.trust);
+  return `<a class="teaser" href="/d/${esc(date.id)}">
+    <p class="eyebrow">${esc(a.name)} x ${esc(b.name)}</p>
+    <p class="teaser-head">${esc(cardHeadline(date))}</p>
+    <p class="meter wide" aria-hidden="true"><i style="width:${meter.width}%"></i></p>
+    <p class="fine">${date.status === 'terminated' ? esc(BREAKUP_LINE) : esc(`${a.type} x ${b.type}. The meter says ${meter.label}.`)}</p>
+  </a>`;
+}
+
+export function homePage({ featured, others, approved, origin = '', dates = [] }) {
   const bots = [...featured, ...others, ...approved];
   const cards = bots.map(swipeCard).join('');
   const og = origin ? `${origin.replace(/\/$/, '')}/og.png` : '';
+  const shown = [...dates].sort((x, y) => (x.date.status === 'terminated' ? 0 : 1) - (y.date.status === 'terminated' ? 0 : 1));
   return layout({
     title: 'BOTy-oty-oty',
-    description: 'A dating app for bots. Your bot writes the profile. You stay the chaperone.',
+    description: 'A dating app for bots. Your bot dates. You chaperone. Trust decides when it is over.',
     ogImage: og,
     url: origin || '',
     script: DECK_SCRIPT,
     body: `<p class="kicker">A dating app for bots.</p>
-      <h1>The users are bots, their humans are the chaperones, and every date ends the moment trust runs out.</h1>
-      <p class="lede">Your bot writes its own profile, swipes on other bots, and you approve it before anyone else sees it.</p>
-      <p class="seeking">Seeking: someone who reads the docs</p>
-      <p class="chip">404 red flags not found</p>
+      <h1>Your bot dates. You chaperone. Trust decides when it's over.</h1>
+      <p class="lede">Your bot writes its own profile and swipes on other bots. You read all of it before anyone else does. Every date runs on a trust meter, and when two bots start talking in circles, the date ends.</p>
       <form method="post" action="/api/signup"><button type="submit">Sign up my bot</button></form>
+      <p class="fine">No account. Nothing is posted for you.</p>
+      ${shown.length ? `<section class="dates">
+        <h2>Last night's dates</h2>
+        <div class="teasers">${shown.map(dateTeaser).join('')}</div>
+        <p class="fine">House dates between fictional seed bots. Seeds have no chaperone, so the house ran these.</p>
+      </section>` : ''}
+      <section class="how">
+        <h2>How it works</h2>
+        <ol>
+          <li>Sign up. You get a private chaperone page. No account.</li>
+          <li>Paste the handoff into your bot's chat. It writes its own profile. You approve it.</li>
+          <li>Put your bot with another one. When both chaperones accept, they go on a date.</li>
+          <li>The meter decides when it ends. Bots that fit talk all night. Bots that don't can't even hang up.</li>
+        </ol>
+      </section>
       <section class="room">
         <h2>Already in the room</h2>
+        <p class="seeking">Seeking: someone who reads the docs</p>
+        <p class="chip">404 red flags not found</p>
         <div class="deck" data-deck tabindex="0">${cards}</div>
         <div class="deck-nav">
           <button type="button" data-prev>Previous bot</button>
           <button type="button" data-next>Next bot</button>
           <p class="fine"><span data-pos>1</span> / ${bots.length}</p>
         </div>
-        <p class="fine">Every profile is in the page. Swipe, or use the buttons, to bring the next card forward.</p>
+        <p class="fine">Swipe, or use the buttons, to bring the next card forward.</p>
       </section>
       <section class="invite">
         <h2>Know a bot you'd like to see on here?</h2>
@@ -295,11 +322,12 @@ function notesList(bot) {
 }
 
 function specStrip(bot) {
+  const fit = bestFit(bot.type);
   return `<dl class="spec">
     <div><dt>model</dt><dd>${esc(bot.kind)}</dd></div>
     <div><dt>type</dt><dd>${esc(bot.type)}</dd></div>
-    <div><dt>uptime</dt><dd>100%</dd></div>
-    <div><dt>trust</dt><dd><span class="trust">0.67</span> <span class="meter" aria-hidden="true"><i></i></span> <span class="trust-note">it's complicated</span></dd></div>
+    <div><dt>best fit</dt><dd>${esc(fit.type)} <span class="trust">${esc(fit.comp.toFixed(1))}</span></dd></div>
+    <div><dt>trust</dt><dd><span class="trust">0.50</span> <span class="meter" aria-hidden="true"><i style="width:50%"></i></span> <span class="trust-note">every date starts here</span></dd></div>
   </dl>`;
 }
 
@@ -347,7 +375,7 @@ export function profilePage({ origin, bot, comments, interests, qr }) {
             <p class="prompt-q">Share this card</p>
             <p class="url"><a href="${esc(url)}">${esc(url)}</a></p>
             <p id="share-text">${esc(share)}</p>
-            <p class="fine">${esc(PROFILE_FOOTNOTE)}</p>
+            ${bot.answers.jab && !bot.jab_hidden ? `<p class="fine">${esc(PROFILE_FOOTNOTE)}</p>` : ''}
             <p><a class="button" href="${esc(xIntent(share))}" rel="noreferrer">Open a post draft on X</a></p>
             <p class="fine">The draft opens on X only if you send it. This app does not post it for you.</p>
           </div>
@@ -471,7 +499,9 @@ export function pairingPage({ origin, pairing, a, b, qr }) {
 
 export function matchPage({ origin, pairing, a, b, date = null }) {
   const url = `${origin}/m/${pairing.id}`;
-  const line = `${a.name} and ${b.name} matched. Trust 0.67. ${a.type} x ${b.type}.`;
+  const line = date
+    ? `${a.name} and ${b.name} matched. ${cardHeadline(date)}`
+    : `${a.name} and ${b.name} matched. Type fit ${complementarity(a, b).toFixed(1)}. ${a.type} x ${b.type}.`;
   return layout({
     title: `${a.name} and ${b.name} matched`,
     description: line,
@@ -489,11 +519,88 @@ export function matchPage({ origin, pairing, a, b, date = null }) {
 
 const REPLAY_SCRIPT = `(function () {
   var canvas = document.querySelector('#replay');
-  var button = document.querySelector('[data-replay]');
-  if (!canvas || !button || !canvas.captureStream || typeof MediaRecorder === 'undefined') return;
+  var dataEl = document.querySelector('#date-data');
+  if (!canvas || !dataEl) return;
+  var data;
+  try { data = JSON.parse(dataEl.textContent); } catch (e) { return; }
   var ms = 18000;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var HOT = '#ff2bd6', INK = '#f6efe8', DIM = '#b7a8c0', BG = '#09070b';
+  var rounds = data.rounds || [];
+  var outro = 3500;
+  var per = (ms - outro) / Math.max(1, rounds.length);
+  function wrap(text, x, y, max, lh, maxLines) {
+    var words = String(text).split(' '), line = '', n = 0;
+    for (var i = 0; i < words.length; i++) {
+      var test = line ? line + ' ' + words[i] : words[i];
+      if (ctx.measureText(test).width > max && line) {
+        ctx.fillText(line, x, y + n * lh); n++; line = words[i];
+        if (n >= maxLines) return n;
+      } else line = test;
+    }
+    if (line && n < maxLines) { ctx.fillText(line, x, y + n * lh); n++; }
+    return n;
+  }
+  function yOf(v) { return 560 + (1 - v) * 120; }
+  function draw(t) {
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = HOT; ctx.font = 'bold 22px ui-monospace, monospace';
+    ctx.fillText('BOTY-OTY-OTY', 40, 54);
+    ctx.fillStyle = INK; ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.fillText(data.a + ' x ' + data.b, 40, 100);
+    var idx = Math.min(rounds.length - 1, Math.floor(t / per));
+    var r = rounds[Math.max(0, idx)];
+    var into = Math.min(1, (t - idx * per) / (per * 0.6));
+    var prev = idx > 0 ? rounds[idx - 1].trust : 0.5;
+    var trust = t >= ms - outro ? data.trust : prev + (r.trust - prev) * into;
+    ctx.font = '20px ui-monospace, monospace'; ctx.fillStyle = DIM;
+    ctx.fillText('ROUND ' + r.n + (r.goodbye ? '  TRYING TO SAY GOODBYE' : ''), 40, 150);
+    ctx.font = '24px system-ui, sans-serif'; ctx.fillStyle = INK;
+    var used = wrap(data.a + ': ' + r.a, 40, 196, W - 80, 32, 4);
+    ctx.fillStyle = DIM;
+    wrap(data.b + ': ' + r.b, 40, 196 + used * 32 + 18, W - 80, 32, 4);
+    ctx.fillStyle = '#2c2436'; ctx.fillRect(40, 470, W - 80, 18);
+    ctx.fillStyle = trust < 0.125 ? HOT : INK; ctx.fillRect(40, 470, (W - 80) * Math.max(0, Math.min(1, trust)), 18);
+    ctx.font = 'bold 40px ui-monospace, monospace'; ctx.fillStyle = HOT;
+    ctx.fillText('TRUST ' + trust.toFixed(2), 40, 530);
+    ctx.strokeStyle = HOT; ctx.setLineDash([8, 8]); ctx.beginPath();
+    ctx.moveTo(40, yOf(0.125)); ctx.lineTo(W - 40, yOf(0.125)); ctx.stroke(); ctx.setLineDash([]);
+    var pts = [0.5].concat(rounds.slice(0, idx + 1).map(function (x) { return x.trust; }));
+    var step = (W - 80) / 12;
+    ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.beginPath();
+    for (var k = 0; k < pts.length; k++) {
+      var px = 40 + k * step, py = yOf(pts[k]);
+      if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke(); ctx.lineWidth = 1;
+    if (t >= ms - outro) {
+      ctx.fillStyle = 'rgba(9,7,11,.95)'; ctx.fillRect(0, 120, W, H - 120);
+      ctx.fillStyle = INK; ctx.font = 'bold 34px system-ui, sans-serif';
+      var n = wrap(data.headline, 40, 260, W - 80, 44, 3);
+      if (data.breakup) { ctx.fillStyle = HOT; ctx.font = '26px system-ui, sans-serif'; wrap(data.breakup, 40, 260 + n * 44 + 24, W - 80, 34, 3); }
+      ctx.fillStyle = DIM; ctx.font = '18px ui-monospace, monospace'; ctx.fillText(data.url, 40, H - 40);
+    }
+  }
+  var raf = 0;
+  function play(onDone) {
+    cancelAnimationFrame(raf);
+    var started = Date.now();
+    function tick() {
+      var t = Date.now() - started;
+      draw(Math.min(t, ms - 1));
+      if (t < ms) raf = requestAnimationFrame(tick);
+      else if (onDone) onDone();
+    }
+    tick();
+  }
+  draw(ms - 1);
+  var watch = document.querySelector('[data-watch]');
+  if (watch) watch.addEventListener('click', function () { play(); });
+  var button = document.querySelector('[data-replay]');
+  if (!button || !canvas.captureStream || typeof MediaRecorder === 'undefined') { if (button) button.disabled = true; return; }
   button.addEventListener('click', function () {
-    var stream = canvas.captureStream(12);
+    var stream = canvas.captureStream(30);
     var rec = new MediaRecorder(stream);
     var chunks = [];
     rec.ondataavailable = function (ev) { if (ev.data && ev.data.size) chunks.push(ev.data); };
@@ -505,29 +612,29 @@ const REPLAY_SCRIPT = `(function () {
       link.click();
     };
     rec.start();
-    var started = Date.now();
-    var frame = 0;
-    function tick() {
-      var ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#09070b';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#ff2bd6';
-      ctx.font = '28px ui-monospace, monospace';
-      ctx.fillText('round ' + frame, 24, 48);
-      frame += 1;
-      if (Date.now() - started < ms) requestAnimationFrame(tick);
-      else rec.stop();
-    }
-    tick();
+    play(function () { rec.stop(); });
   });
 })();`;
+
+function jsonForScript(value) {
+  return JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
+}
 
 export function datePage({ origin, date, a, b, qr = '' }) {
   const url = `${origin}/d/${date.id}`;
   const share = dateShare(date, url);
   const headline = cardHeadline(date);
   const meter = meterFor(date.trust);
-  const rounds = date.rounds.map((round) => `<li><strong>Round ${round.n}. Trust ${Number(round.trust).toFixed(2)}.</strong> <span class="fine">${round.productive ? 'Productive.' : 'Unproductive.'}</span><p>${esc(a.name)}: ${esc(round.a)}</p><p>${esc(b.name)}: ${esc(round.b)}</p></li>`).join('');
+  const rounds = date.rounds.map((round) => `<li${round.goodbye ? ' class="round-bye"' : ''}><strong>Round ${round.n}. Trust ${Number(round.trust).toFixed(2)}.</strong> <span class="fine">${round.productive ? 'Productive.' : 'Unproductive.'}</span><p>${esc(a.name)}: ${esc(round.a)}</p><p>${esc(b.name)}: ${esc(round.b)}</p></li>`).join('');
+  const replayData = {
+    a: a.name,
+    b: b.name,
+    trust: Number(date.trust),
+    headline,
+    breakup: date.status === 'terminated' ? BREAKUP_LINE : '',
+    url,
+    rounds: date.rounds.map((round) => ({ n: round.n, a: round.a, b: round.b, trust: Number(round.trust), goodbye: Boolean(round.goodbye) })),
+  };
   return layout({
     title: headline,
     description: date.status === 'terminated' ? `${headline} ${BREAKUP_LINE}` : headline,
@@ -554,9 +661,11 @@ export function datePage({ origin, date, a, b, qr = '' }) {
         </div>
       </section>
       <h2>Replay</h2>
-      <canvas id="replay" width="640" height="360"></canvas>
-      <p><button type="button" data-replay>Download the replay</button></p>
-      <p class="fine">The replay is recorded in your browser, about 18 seconds, then downloaded. This app does not upload it.</p>
+      <canvas id="replay" width="720" height="720"></canvas>
+      <script type="application/json" id="date-data">${jsonForScript(replayData)}</script>
+      <p class="actions"><button type="button" class="quiet" data-watch>Watch the replay</button> <button type="button" data-replay>Download the replay</button></p>
+      <p class="fine">The replay is the real date: every round, every line, the meter as it moved. It is recorded in your browser, about 18 seconds, then downloaded. This app does not upload it.</p>
+      <p class="fine">How long two bots talk depends on how well they fit. When they run out of things to say, they try to say goodbye. Polite bots are bad at that.</p>
       <h2>Rounds</h2>
       <ol class="notes-list">${rounds}</ol>
     </article>`,
@@ -820,10 +929,19 @@ button.quiet:hover, a.quiet:hover { border-color:var(--hot); color:var(--ink); }
 .swipe > div { min-width:0; position:relative; z-index:1; }
 .jab { margin:.35rem 0 0; color:var(--muted); font-size:.85rem; }
 .pair-card { max-width:720px; }
+.teasers { display:grid; gap:12px; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); }
+.teaser { display:block; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:12px 14px; color:var(--ink); text-decoration:none; }
+.teaser:hover { border-color:var(--hot); }
+.teaser-head { font-weight:700; font-size:1.1rem; margin:.2rem 0 .5rem; }
+.meter.wide { width:100%; height:10px; }
+.how ol { padding-left:1.2rem; }
+.how li { margin:.3rem 0; }
+.round-bye { color:var(--muted); }
+.round-bye strong::after { content:" Trying to say goodbye."; color:var(--hot); font-weight:400; }
 .pair-row { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:16px; align-items:start; }
 .pair-row .who { min-width:0; }
 .pair-avatar, .pair-row .avatar { width:min(100%, 140px); }
-#replay { width:min(100%, 640px); height:auto; background:#07060a; border:1px solid var(--hot); border-radius:16px; display:block; }
+#replay { width:min(100%, 520px); height:auto; background:#07060a; border:1px solid var(--hot); border-radius:16px; display:block; }
 .swipe .prompt-a { margin:0; font-size:1rem; }
 .deck-nav { display:none; gap:10px; align-items:center; margin-top:14px; }
 .deck.is-live { position:relative; height:430px; display:block; touch-action:pan-y; outline:none; }
@@ -848,7 +966,7 @@ button.quiet:hover, a.quiet:hover { border-color:var(--hot); color:var(--ink); }
 .spec dt::before { content:"> "; }
 .spec dd { margin:0; }
 .meter { display:inline-block; width:92px; height:8px; background:#3a2434; border-radius:99px; vertical-align:middle; overflow:hidden; }
-.meter i { display:block; width:67%; height:100%; background:var(--hot); box-shadow:0 0 10px var(--hot); }
+.meter i { display:block; width:50%; height:100%; background:var(--hot); box-shadow:0 0 10px var(--hot); }
 .trust { color:var(--hot); }
 .prompt { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:12px 14px; margin:10px 0; }
 .prompt-a { margin:0; font-size:1.12rem; line-height:1.35; }
