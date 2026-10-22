@@ -129,8 +129,7 @@ export function parseHtml(html) {
   return root;
 }
 
-export function textOf(node, opts = {}) {
-  const skip = opts.skip || new Set(['script', 'style', 'noscript', 'template', 'svg']);
+function collectText(node, skip) {
   const out = [];
   const walk = (n) => {
     if (n.tag === '#text') {
@@ -144,6 +143,17 @@ export function textOf(node, opts = {}) {
   };
   walk(node);
   return out.join('').replace(/\s+/g, ' ').trim();
+}
+
+export function textOf(node, opts = {}) {
+  const skip = opts.skip || new Set(['script', 'style', 'noscript', 'template', 'svg']);
+  // noscript stays out of ordinary page text (same as script and style). The
+  // rubric still scores its fallback, so asking for the noscript node itself
+  // returns the visible text inside it, not the raw markup.
+  if (node && node.tag === 'noscript' && skip.has('noscript')) {
+    return collectText(parseHtml(node.raw || ''), skip);
+  }
+  return collectText(node, skip);
 }
 
 export function find(root, pred, out = []) {

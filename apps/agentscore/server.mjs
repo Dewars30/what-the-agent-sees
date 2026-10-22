@@ -4,6 +4,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyze, HttpError } from './core/page.mjs';
 import { shell, esc, quoteIntent, replyIntent, repostIntent, viralBar, renderOgSvg, renderOgPng } from './core/kit.mjs';
+import { synteqPage, demoDocument, DEMO_CSP } from './synteq-page.mjs';
+
+const NAV = [
+  ['/index', 'The index'],
+  ['/method', 'Method'],
+  ['/synteq', 'Synteq'],
+];
+function view(opts) {
+  return shell({ ...opts, navLinks: NAV });
+}
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8080);
@@ -71,7 +81,7 @@ function resultView(r, rawInput) {
   const topThree = [...scored.findings].filter((f) => f.level !== 'ok').sort((a, b) => (b.worth || 0) - (a.worth || 0)).slice(0, 3);
   const recoverable = topThree.reduce((n, f) => n + (f.worth || 0), 0);
 
-  return shell({
+  return view({
     title: `${page.host} — ${scored.score}/100 · AgentScore`,
     description: `${page.host} scores ${scored.score}/100 for how well an AI agent can read and act on it. ${scored.verdict}.`,
     ogImage: `${APP}/og.svg?title=${encodeURIComponent(page.host)}&score=${encodeURIComponent(`${scored.score}/100`)}&sub=${encodeURIComponent(`Grade ${scored.grade} · ${scored.verdict}`)}`,
@@ -140,7 +150,7 @@ function blockedView(r, rawInput) {
   const { blocked, page } = r;
   const shareText = `${blocked.host} answered a machine with ${blocked.status === 200 ? 'a bot check' : 'HTTP ' + blocked.status}. To an AI agent that is a 0/100.\n\n${APP}`;
   const grokText = `${blocked.host} refuses to serve a non-browser client, so it scores 0/100 for AI agents. @grok is blocking agents now a strategy or an accident\n\n${APP}/?url=${encodeURIComponent('https://' + blocked.host)}`;
-  return shell({
+  return view({
     title: `${blocked.host} — 0/100 · AgentScore`,
     description: `${blocked.host} does not serve a readable page to a client that is not a browser. To an agent, that is a zero.`,
     body: `<main>
@@ -194,7 +204,7 @@ function landing(err, challenger = null) {
   const rows = top
     .map((r) => `<tr><td><a href="/?url=${encodeURIComponent('https://' + r.host)}">${esc(r.host)}</a></td><td class="s">${r.score}</td></tr>`)
     .join('');
-  return shell({
+  return view({
     title: 'AgentScore — how your site looks to an AI agent',
     description: 'Paste a URL. Get a 0-100 score on whether an AI agent can actually read and act on your site, plus the exact fixes.',
     ogImage: `${APP}/og.svg`,
@@ -232,7 +242,7 @@ function indexView() {
       <td class="s muted">${esc(r.verdict)}</td></tr>`
     )
     .join('');
-  return shell({
+  return view({
     title: 'The index — AgentScore',
     description: 'Agent-readiness scores for well-known developer-facing homepages, measured the same way for everyone.',
     body: `<main>
@@ -256,7 +266,7 @@ function refusedView() {
     ...blocked.map((b) => `<tr><td><a href="/?url=${encodeURIComponent('https://' + b.host)}">${esc(b.host)}</a></td><td class="s" style="color:var(--red)">${b.status}</td><td class="s muted">refused</td></tr>`),
     ...shells.map((x) => `<tr><td><a href="/?url=${encodeURIComponent('https://' + x.host)}">${esc(x.host)}</a></td><td class="s" style="color:var(--amber)">${x.words}</td><td class="s muted">words sent</td></tr>`),
   ].join('');
-  return shell({
+  return view({
     title: `The sites that refuse to be read · AgentScore`,
     description: `Of ${total} well-known websites fetched by a plain HTTP client, ${blocked.length} refused to answer and ${shells.length} sent a page with no content.`,
     body: `<main>
@@ -271,7 +281,7 @@ function refusedView() {
 }
 
 function methodView() {
-  return shell({
+  return view({
     title: 'Method — AgentScore',
     description: 'The seven weighted dimensions behind the AgentScore number, and what each one costs you.',
     body: `<main>
@@ -300,8 +310,13 @@ function methodView() {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  const send = (code, type, body) => {
-    res.writeHead(code, { 'content-type': type, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' });
+  const send = (code, type, body, extra) => {
+    res.writeHead(code, {
+      'content-type': type,
+      'cache-control': 'no-store',
+      'x-content-type-options': 'nosniff',
+      ...(extra || {}),
+    });
     res.end(body);
   };
   try {
@@ -341,12 +356,24 @@ ${board}
 ## The sites that refuse to be read
 Fetched with a plain HTTP client, 2026-10-21: 21 of 40 well-known sites answered with a bot check or an error instead of the page, and 9 more sent HTML with effectively no words. Full table: ${APP}/refused
 
+## synteq.com markup
+Saved homepage, the same file with markup edits, and that file with scripts removed: ${APP}/synteq
+Demo HTML (forms do not submit, not affiliated with Synteq): ${APP}/synteq/patched and ${APP}/synteq/static
+
 ## Scope
 Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking; scanned pages are not stored.
 `);
     }
-    if (url.pathname === '/sitemap.xml') return send(200, 'application/xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${APP}/</loc></url><url><loc>${APP}/index</loc></url><url><loc>${APP}/method</loc></url><url><loc>${APP}/refused</loc></url></urlset>`);
+    if (url.pathname === '/sitemap.xml') return send(200, 'application/xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${APP}/</loc></url><url><loc>${APP}/index</loc></url><url><loc>${APP}/method</loc></url><url><loc>${APP}/refused</loc></url><url><loc>${APP}/synteq</loc></url></urlset>`);
     if (url.pathname === '/method') return send(200, 'text/html; charset=utf-8', methodView());
+    if (url.pathname === '/synteq' || url.pathname === '/synteq/') return send(200, 'text/html; charset=utf-8', await synteqPage(NAV));
+    if (url.pathname === '/synteq/patched' || url.pathname === '/synteq/static') {
+      const which = url.pathname.endsWith('/static') ? 'static' : 'patched';
+      return send(200, 'text/html; charset=utf-8', demoDocument(which), {
+        'content-security-policy': DEMO_CSP,
+        'referrer-policy': 'no-referrer',
+      });
+    }
     if (url.pathname === '/index') return send(200, 'text/html; charset=utf-8', indexView());
     if (url.pathname === '/refused') return send(200, 'text/html; charset=utf-8', refusedView());
     if (url.pathname === '/api/scan') {

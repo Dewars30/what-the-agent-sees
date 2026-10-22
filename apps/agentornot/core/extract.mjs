@@ -16,6 +16,16 @@ function metaMap(root) {
   return out;
 }
 
+function canonicalUrl(root, meta) {
+  for (const link of elementsOf(root, ['link'])) {
+    const rel = String(link.attrs.rel || '').toLowerCase().split(/\s+/).filter(Boolean);
+    if (!rel.includes('canonical')) continue;
+    const href = CLEAN(link.attrs.href || '');
+    if (href) return href;
+  }
+  return CLEAN(meta.canonical || '');
+}
+
 export function extractModel(html, finalUrl) {
   const root = parseHtml(html);
   const meta = metaMap(root);
@@ -145,7 +155,7 @@ export function extractModel(html, finalUrl) {
     title,
     titleLength: title.length,
     description: CLEAN(meta.description || ''),
-    canonical: CLEAN(meta.canonical || ''),
+    canonical: canonicalUrl(root, meta),
     viewport: CLEAN(meta.viewport || ''),
     robotsMeta: CLEAN(meta.robots || ''),
     og: {

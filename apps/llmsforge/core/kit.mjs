@@ -305,8 +305,9 @@ export function renderOgPng({
   ]);
 }
 
-export function shell({ title, description, body, head = '', nav = true, footer = true, ogImage = '/og.png', challenger = null }) {
+export function shell({ title, description, body, head = '', nav = true, footer = true, ogImage = '/og.png', challenger = null, navLinks = null }) {
   const pngOg = String(ogImage || '/og.png').replace(/\/og\.svg(\?|$)/, '/og.png$1');
+  const links = Array.isArray(navLinks) && navLinks.length ? navLinks : [['/index', 'The index'], ['/method', 'Method']];
   const banner = challenger && challenger.rival
     ? `<div class="challenger-banner">
         <span>⚔️ <strong>PVP CHALLENGE:</strong> Can your site beat <strong>${esc(challenger.rival)}</strong>${challenger.score != null ? ` (${esc(challenger.score)}/100)` : ''}?</span>
@@ -327,7 +328,7 @@ export function shell({ title, description, body, head = '', nav = true, footer 
 </head><body>
 <div class="wrap">
 ${nav ? `<header class="top"><a class="brand" href="/"><span class="dot"></span>AgentScore</a>
-<nav><a href="/index">The index</a><a href="/method">Method</a></nav></header>` : ''}
+<nav>${links.map(([href, label]) => `<a href="${esc(href)}">${esc(label)}</a>`).join('')}</nav></header>` : ''}
 ${banner}${body}
 ${footer ? `<footer class="bot"><span>AgentScore measures how usable a page is to a software agent, not to a person.</span><span>No tracking. Scanned pages are not stored.</span></footer>` : ''}
 </div></body></html>`;
