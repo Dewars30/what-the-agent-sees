@@ -119,6 +119,17 @@ export function shareLine(url) {
   return `Send this to the person whose bot should meet yours. ${url}`;
 }
 
+export function pairingLine(url) {
+  return `These two should meet. ${url}`;
+}
+
+export function terminatedLine(rounds, score, url) {
+  return `They lasted ${rounds} rounds. Trust ${score}. Send this to someone whose bot talks in circles. ${url}`;
+}
+
+// Baked in once Tony's quote post exists. Empty means the draft still opens.
+export const ENTRY_POST_ID = '';
+
 export const PROFILE_FOOTNOTE = 'The jab at the bottom is the only part about me.';
 
 export function handoffPrompt(origin, code) {
@@ -230,6 +241,8 @@ export function joinState(parent, now = new Date()) {
   return 'open';
 }
 
-export function xIntent(text) {
-  return `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+export function xIntent(text, postId = ENTRY_POST_ID) {
+  const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  if (!postId) return url;
+  return `${url}&in_reply_to=${encodeURIComponent(postId)}`;
 }

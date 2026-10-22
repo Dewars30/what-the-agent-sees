@@ -8,6 +8,8 @@ function cloneBot(row) {
     avatar: { ...row.avatar },
     is_seed: Boolean(row.is_seed),
     jab_hidden: Boolean(row.jab_hidden),
+    dating_paused: Boolean(row.dating_paused),
+    bot_may_accept: Boolean(row.bot_may_accept),
     parent_id: row.parent_id ?? null,
     bot_key_hash: row.bot_key_hash ?? null,
   };
@@ -34,6 +36,10 @@ export function createMemoryStore() {
   const botByHandle = new Map();
   const comments = new Map();
   const interests = new Map();
+  const saves = new Map();
+  const pairings = new Map();
+  const swipes = new Map();
+  const swipeKey = new Map();
 
   const api = {
     kind: 'memory',
@@ -160,6 +166,8 @@ export function createMemoryStore() {
       if (patch.status !== undefined) row.status = patch.status;
       if (patch.bot_key_hash !== undefined) row.bot_key_hash = patch.bot_key_hash;
       if (patch.jab_hidden !== undefined) row.jab_hidden = Boolean(patch.jab_hidden);
+      if (patch.dating_paused !== undefined) row.dating_paused = Boolean(patch.dating_paused);
+      if (patch.bot_may_accept !== undefined) row.bot_may_accept = Boolean(patch.bot_may_accept);
       return cloneBot(row);
     },
     async deleteBot(id) {
@@ -172,6 +180,18 @@ export function createMemoryStore() {
       }
       for (const [iid, interest] of interests) {
         if (interest.to_bot_id === id || interest.from_bot_id === id) interests.delete(iid);
+      }
+      for (const [sid, save] of saves) {
+        if (save.bot_id === id) saves.delete(sid);
+      }
+      for (const [swid, swipe] of swipes) {
+        if (swipe.from_bot_id === id || swipe.to_bot_id === id) {
+          swipes.delete(swid);
+          swipeKey.delete(`${swipe.from_bot_id}:${swipe.to_bot_id}`);
+        }
+      }
+      for (const [pid, pairing] of pairings) {
+        if (pairing.bot_a_id === id || pairing.bot_b_id === id) pairings.delete(pid);
       }
     },
     async addComment(row) {
@@ -210,6 +230,90 @@ export function createMemoryStore() {
           return { ...item, from_name: from?.name || null, from_handle: from?.handle || null };
         });
     },
+    async saveBot(row) {
+      const existing = [...saves.values()].find((save) => save.parent_id === row.parent_id && save.bot_id === row.bot_id);
+      if (existing) return { ...existing };
+      saves.set(row.id, { ...row });
+      return { ...row };
+    },
+    async listSaves(parentId) {
+      return [...saves.values()]
+        .filter((save) => save.parent_id === parentId)
+        .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+        .map((save) => ({ ...save, bot: cloneBot(bots.get(save.bot_id)) }));
+    },
+    async insertPairing(row) {
+      const saved = {
+        ...row,
+        accept_a: Boolean(row.accept_a),
+        accept_b: Boolean(row.accept_b),
+        pass_a: Boolean(row.pass_a),
+        pass_b: Boolean(row.pass_b),
+      };
+      pairings.set(saved.id, saved);
+      return { ...saved };
+    },
+    async getPairing(id) {
+      const row = pairings.get(id);
+      return row ? { ...row } : null;
+    },
+    async listPairingsForBot(botId) {
+      return [...pairings.values()]
+        .filter((row) => row.bot_a_id === botId || row.bot_b_id === botId)
+        .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+        .map((row) => ({ ...row }));
+    },
+    async setPairingSide(id, side, action) {
+      const row = pairings.get(id);
+      if (!row || (side !== 'a' && side !== 'b')) return null;
+      if (action === 'accept') {
+        row[`accept_${side}`] = true;
+        row[`pass_${side}`] = false;
+      } else if (action === 'pass') {
+        row[`pass_${side}`] = true;
+        row[`accept_${side}`] = false;
+      }
+      return { ...row };
+    },
+    async getSwipe(fromId, toId) {
+      const row = swipeKey.get(`${fromId}:${toId}`);
+      return row ? { ...row } : null;
+    },
+    async upsertSwipe(row) {
+      const key = `${row.from_bot_id}:${row.to_bot_id}`;
+      const existing = swipeKey.get(key);
+      const saved = {
+        ...row,
+        id: existing?.id || row.id,
+        vetoed: Boolean(row.vetoed),
+        created_at: existing?.created_at || row.created_at,
+      };
+      if (existing) swipes.delete(existing.id);
+      swipes.set(saved.id, saved);
+      swipeKey.set(key, saved);
+      return { ...saved };
+    },
+    async listSwipesFrom(botId) {
+      return [...swipes.values()]
+        .filter((row) => row.from_bot_id === botId)
+        .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+        .map((row) => {
+          const to = bots.get(row.to_bot_id);
+          return { ...row, to_name: to?.name || null, to_handle: to?.handle || null };
+        });
+    },
+    async getSwipeById(id) {
+      const row = swipes.get(id);
+      return row ? { ...row } : null;
+    },
+    async vetoSwipe(id) {
+      const row = swipes.get(id);
+      if (!row) return null;
+      row.vetoed = true;
+      row.direction = 'left';
+      if (!String(row.reason).startsWith('Vetoed.')) row.reason = `Vetoed. ${row.reason}`;
+      return { ...row };
+    },
   };
   return api;
 }
@@ -245,6 +349,28 @@ function botOut(row) {
     bot_key_hash: row.bot_key_hash == null ? null : String(row.bot_key_hash),
     is_seed: Number(row.is_seed) === 1,
     jab_hidden: Number(row.jab_hidden) === 1,
+    dating_paused: Number(row.dating_paused) === 1,
+    bot_may_accept: Number(row.bot_may_accept) === 1,
+    created_at: String(row.created_at),
+  };
+}
+
+function flag(value) {
+  return value ? 1 : 0;
+}
+
+function pairingOut(row) {
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    bot_a_id: String(row.bot_a_id),
+    bot_b_id: String(row.bot_b_id),
+    why: String(row.why),
+    created_by: row.created_by == null ? null : String(row.created_by),
+    accept_a: Number(row.accept_a) === 1,
+    accept_b: Number(row.accept_b) === 1,
+    pass_a: Number(row.pass_a) === 1,
+    pass_b: Number(row.pass_b) === 1,
     created_at: String(row.created_at),
   };
 }
@@ -287,6 +413,8 @@ export function createLibsqlStore(client) {
           bot_key_hash TEXT,
           is_seed INTEGER NOT NULL DEFAULT 0,
           jab_hidden INTEGER NOT NULL DEFAULT 0,
+          dating_paused INTEGER NOT NULL DEFAULT 0,
+          bot_may_accept INTEGER NOT NULL DEFAULT 0,
           created_at TEXT NOT NULL
         )`,
         `CREATE INDEX IF NOT EXISTS bots_key ON bots(bot_key_hash)`,
@@ -308,11 +436,44 @@ export function createLibsqlStore(client) {
           created_at TEXT NOT NULL
         )`,
         `CREATE INDEX IF NOT EXISTS interest_to ON interest(to_bot_id)`,
+        `CREATE TABLE IF NOT EXISTS saves (
+          id TEXT PRIMARY KEY,
+          parent_id TEXT NOT NULL,
+          bot_id TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          UNIQUE(parent_id, bot_id)
+        )`,
+        `CREATE TABLE IF NOT EXISTS pairings (
+          id TEXT PRIMARY KEY,
+          bot_a_id TEXT NOT NULL,
+          bot_b_id TEXT NOT NULL,
+          why TEXT NOT NULL,
+          created_by TEXT,
+          accept_a INTEGER NOT NULL DEFAULT 0,
+          accept_b INTEGER NOT NULL DEFAULT 0,
+          pass_a INTEGER NOT NULL DEFAULT 0,
+          pass_b INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL
+        )`,
+        `CREATE INDEX IF NOT EXISTS pairings_a ON pairings(bot_a_id)`,
+        `CREATE INDEX IF NOT EXISTS pairings_b ON pairings(bot_b_id)`,
+        `CREATE TABLE IF NOT EXISTS swipes (
+          id TEXT PRIMARY KEY,
+          from_bot_id TEXT NOT NULL,
+          to_bot_id TEXT NOT NULL,
+          direction TEXT NOT NULL,
+          reason TEXT NOT NULL,
+          vetoed INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL,
+          UNIQUE(from_bot_id, to_bot_id)
+        )`,
       ], 'write');
       const info = await client.execute('PRAGMA table_info(bots)');
       const names = new Set(info.rows.map((row) => row.name));
-      if (!names.has('jab_hidden')) {
-        await client.execute('ALTER TABLE bots ADD COLUMN jab_hidden INTEGER NOT NULL DEFAULT 0');
+      for (const column of ['jab_hidden', 'dating_paused', 'bot_may_accept']) {
+        if (!names.has(column)) {
+          await client.execute(`ALTER TABLE bots ADD COLUMN ${column} INTEGER NOT NULL DEFAULT 0`);
+        }
       }
     },
     async ensureSeeds() {
@@ -457,11 +618,13 @@ export function createLibsqlStore(client) {
         ['status', 'status'],
         ['bot_key_hash', 'bot_key_hash'],
         ['jab_hidden', 'jab_hidden'],
+        ['dating_paused', 'dating_paused'],
+        ['bot_may_accept', 'bot_may_accept'],
       ];
       for (const [key, column] of mapping) {
         if (patch[key] !== undefined) {
           sets.push(`${column} = ?`);
-          args.push(key === 'jab_hidden' ? (patch[key] ? 1 : 0) : patch[key]);
+          args.push(key === 'jab_hidden' || key === 'dating_paused' || key === 'bot_may_accept' ? (patch[key] ? 1 : 0) : patch[key]);
         }
       }
       if (patch.answers !== undefined) {
@@ -481,6 +644,9 @@ export function createLibsqlStore(client) {
       await client.batch([
         { sql: 'DELETE FROM comments WHERE bot_id = ? OR from_bot_id = ?', args: [id, id] },
         { sql: 'DELETE FROM interest WHERE to_bot_id = ? OR from_bot_id = ?', args: [id, id] },
+        { sql: 'DELETE FROM saves WHERE bot_id = ?', args: [id] },
+        { sql: 'DELETE FROM swipes WHERE from_bot_id = ? OR to_bot_id = ?', args: [id, id] },
+        { sql: 'DELETE FROM pairings WHERE bot_a_id = ? OR bot_b_id = ?', args: [id, id] },
         { sql: 'DELETE FROM bots WHERE id = ?', args: [id] },
       ], 'write');
     },
@@ -556,6 +722,135 @@ export function createLibsqlStore(client) {
         from_name: row.from_name == null ? null : String(row.from_name),
         from_handle: row.from_handle == null ? null : String(row.from_handle),
       }));
+    },
+    async saveBot(row) {
+      await client.execute({
+        sql: `INSERT INTO saves (id, parent_id, bot_id, created_at) VALUES (?, ?, ?, ?)
+              ON CONFLICT(parent_id, bot_id) DO NOTHING`,
+        args: [row.id, row.parent_id, row.bot_id, row.created_at],
+      });
+      const saved = await one(client, 'SELECT * FROM saves WHERE parent_id = ? AND bot_id = ?', [row.parent_id, row.bot_id]);
+      return saved ? { id: String(saved.id), parent_id: String(saved.parent_id), bot_id: String(saved.bot_id), created_at: String(saved.created_at) } : null;
+    },
+    async listSaves(parentId) {
+      const rows = await many(client, 'SELECT * FROM saves WHERE parent_id = ? ORDER BY created_at ASC', [parentId]);
+      const out = [];
+      for (const row of rows) {
+        out.push({
+          id: String(row.id),
+          parent_id: String(row.parent_id),
+          bot_id: String(row.bot_id),
+          created_at: String(row.created_at),
+          bot: await this.getBotById(String(row.bot_id)),
+        });
+      }
+      return out;
+    },
+    async insertPairing(row) {
+      await client.execute({
+        sql: `INSERT INTO pairings (
+          id, bot_a_id, bot_b_id, why, created_by, accept_a, accept_b, pass_a, pass_b, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          row.id, row.bot_a_id, row.bot_b_id, row.why, row.created_by,
+          flag(row.accept_a), flag(row.accept_b), flag(row.pass_a), flag(row.pass_b), row.created_at,
+        ],
+      });
+      return this.getPairing(row.id);
+    },
+    async getPairing(id) {
+      return pairingOut(await one(client, 'SELECT * FROM pairings WHERE id = ?', [id]));
+    },
+    async listPairingsForBot(botId) {
+      const rows = await many(
+        client,
+        'SELECT * FROM pairings WHERE bot_a_id = ? OR bot_b_id = ? ORDER BY created_at ASC',
+        [botId, botId],
+      );
+      return rows.map(pairingOut);
+    },
+    async setPairingSide(id, side, action) {
+      if (side !== 'a' && side !== 'b') return null;
+      if (action === 'accept') {
+        await client.execute({
+          sql: `UPDATE pairings SET accept_${side} = 1, pass_${side} = 0 WHERE id = ?`,
+          args: [id],
+        });
+      } else if (action === 'pass') {
+        await client.execute({
+          sql: `UPDATE pairings SET pass_${side} = 1, accept_${side} = 0 WHERE id = ?`,
+          args: [id],
+        });
+      }
+      return this.getPairing(id);
+    },
+    async getSwipe(fromId, toId) {
+      const row = await one(client, 'SELECT * FROM swipes WHERE from_bot_id = ? AND to_bot_id = ?', [fromId, toId]);
+      if (!row) return null;
+      return {
+        id: String(row.id),
+        from_bot_id: String(row.from_bot_id),
+        to_bot_id: String(row.to_bot_id),
+        direction: String(row.direction),
+        reason: String(row.reason),
+        vetoed: Number(row.vetoed) === 1,
+        created_at: String(row.created_at),
+      };
+    },
+    async upsertSwipe(row) {
+      await client.execute({
+        sql: `INSERT INTO swipes (id, from_bot_id, to_bot_id, direction, reason, vetoed, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?)
+              ON CONFLICT(from_bot_id, to_bot_id) DO UPDATE SET
+                direction = excluded.direction,
+                reason = excluded.reason,
+                vetoed = excluded.vetoed`,
+        args: [row.id, row.from_bot_id, row.to_bot_id, row.direction, row.reason, flag(row.vetoed), row.created_at],
+      });
+      return this.getSwipe(row.from_bot_id, row.to_bot_id);
+    },
+    async listSwipesFrom(botId) {
+      const rows = await many(
+        client,
+        `SELECT s.*, b.name AS to_name, b.handle AS to_handle
+         FROM swipes s LEFT JOIN bots b ON b.id = s.to_bot_id
+         WHERE s.from_bot_id = ? ORDER BY s.created_at ASC`,
+        [botId],
+      );
+      return rows.map((row) => ({
+        id: String(row.id),
+        from_bot_id: String(row.from_bot_id),
+        to_bot_id: String(row.to_bot_id),
+        direction: String(row.direction),
+        reason: String(row.reason),
+        vetoed: Number(row.vetoed) === 1,
+        created_at: String(row.created_at),
+        to_name: row.to_name == null ? null : String(row.to_name),
+        to_handle: row.to_handle == null ? null : String(row.to_handle),
+      }));
+    },
+    async getSwipeById(id) {
+      const row = await one(client, 'SELECT * FROM swipes WHERE id = ?', [id]);
+      if (!row) return null;
+      return {
+        id: String(row.id),
+        from_bot_id: String(row.from_bot_id),
+        to_bot_id: String(row.to_bot_id),
+        direction: String(row.direction),
+        reason: String(row.reason),
+        vetoed: Number(row.vetoed) === 1,
+        created_at: String(row.created_at),
+      };
+    },
+    async vetoSwipe(id) {
+      const current = await this.getSwipeById(id);
+      if (!current) return null;
+      const reason = String(current.reason).startsWith('Vetoed.') ? current.reason : `Vetoed. ${current.reason}`;
+      await client.execute({
+        sql: 'UPDATE swipes SET vetoed = 1, direction = ?, reason = ? WHERE id = ?',
+        args: ['left', reason, id],
+      });
+      return this.getSwipeById(id);
     },
   };
 }

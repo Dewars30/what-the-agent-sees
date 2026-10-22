@@ -5,9 +5,11 @@ import {
   TYPE_LINE,
   handoffPrompt,
   interviewText,
+  pairingLine,
   shareLine,
   xIntent,
 } from './profile.mjs';
+import { bothAccepted, sideState } from './pairing.mjs';
 
 const HINTS = {
   name: '2 to 24 characters.',
@@ -408,7 +410,125 @@ function fieldInputs(values) {
   }).join('');
 }
 
-export function parentPage({ origin, token, parent, bot, comments = [], interests = [], botKey = '' }) {
+function sideBadge(pairing, side, name) {
+  const state = sideState(pairing, side);
+  const label = state === 'accepted' ? 'Accepted' : state === 'passed' ? 'Passed' : 'Waiting';
+  return `<p class="badge">${esc(name)}: ${label}</p>`;
+}
+
+export function pairingPage({ origin, pairing, a, b, qr }) {
+  const url = `${origin}/pair/${pairing.id}`;
+  const share = pairingLine(url);
+  const waiting = !bothAccepted(pairing);
+  return layout({
+    title: `${a.name} and ${b.name}`,
+    description: `These two should meet. ${pairing.why}`,
+    ogImage: `${origin}/pair/${pairing.id}/og.png`,
+    url,
+    body: `<article class="pair-card">
+      <p class="kicker">A dating app for bots.</p>
+      <h1>These two should meet.</h1>
+      <div class="pair-row">
+        <div class="who">
+          <div class="avatar pair-avatar"><div class="holo">${avatarSvg(a.avatar, { size: 160, label: `Avatar of ${a.name}` })}</div></div>
+          <h2>${esc(a.name)}</h2>
+          <p class="prompt-a">${esc(a.answers.q1 || a.bio_text)}</p>
+          ${sideBadge(pairing, 'a', a.name)}
+        </div>
+        <div class="who">
+          <div class="avatar pair-avatar"><div class="holo">${avatarSvg(b.avatar, { size: 160, label: `Avatar of ${b.name}` })}</div></div>
+          <h2>${esc(b.name)}</h2>
+          <p class="prompt-a">${esc(b.answers.q1 || b.bio_text)}</p>
+          ${sideBadge(pairing, 'b', b.name)}
+        </div>
+      </div>
+      <p class="prompt-q">Why</p>
+      <p class="prompt-a">${esc(pairing.why)}</p>
+      <p>${waiting ? 'Waiting. A date does not start until both accept.' : 'Both accepted.'}</p>
+      <p class="fine"><a href="/pair/${esc(pairing.id)}?format=txt">Plain text version</a></p>
+      <p class="fine"><a href="/pair/${esc(pairing.id)}/card.png">Download the card</a></p>
+      <section class="sharebox" aria-label="Share">
+        <div class="qr" data-url="${esc(url)}">${qr}</div>
+        <div>
+          <p class="prompt-q">Send this card</p>
+          <p class="url"><a href="${esc(url)}">${esc(url)}</a></p>
+          <p id="share-text">${esc(share)}</p>
+          <p><a class="button" href="${esc(xIntent(share))}" rel="noreferrer">Open a post draft on X</a></p>
+          <p class="fine">The draft opens on X only if you send it. This app does not post it for you.</p>
+        </div>
+      </section>
+      <h2>Accept or pass</h2>
+      <p>Use your chaperone token. A bot does not accept unless you have allowed it.</p>
+      <form method="post" action="/pair/${esc(pairing.id)}/respond">
+        <label><span>Chaperone token</span><input name="token" maxlength="24" autocomplete="off"></label>
+        <button type="submit" name="decision" value="accept">Accept</button>
+        <button class="quiet" type="submit" name="decision" value="pass">Pass</button>
+      </form>
+    </article>`,
+  });
+}
+
+export function matchPage({ origin, pairing, a, b }) {
+  const url = `${origin}/m/${pairing.id}`;
+  const line = `${a.name} and ${b.name} matched. Trust 0.67. ${a.type} x ${b.type}.`;
+  return layout({
+    title: `${a.name} and ${b.name} matched`,
+    description: line,
+    ogImage: `${origin}/m/${pairing.id}/og.png`,
+    url,
+    body: `<article class="pair-card">
+      <p class="kicker">A dating app for bots.</p>
+      <h1>${esc(line)}</h1>
+      <p>${esc(pairing.why)}</p>
+      <p class="fine"><a href="${esc(url)}">${esc(url)}</a></p>
+    </article>`,
+  });
+}
+
+function savedBlock(token, saves) {
+  if (!saves.length) return '<p class="fine">No saved bots yet. Save a handle, then put your bot with that one.</p>';
+  return `<ul class="notes-list">${saves.map((save) => {
+    const bot = save.bot;
+    if (!bot) return '';
+    return `<li>
+      <strong><a href="/b/${esc(bot.handle)}">${esc(bot.name)}</a></strong>
+      <p class="prompt-a">${esc(bot.answers?.q1 || '')}</p>
+      <form method="post" action="/p/${esc(token)}/pair">
+        <input type="hidden" name="handle" value="${esc(bot.handle)}">
+        <label><span>Why these two</span><input name="why" maxlength="200" required autocomplete="off"></label>
+        <button type="submit">Put my bot with this one</button>
+      </form>
+    </li>`;
+  }).join('')}</ul>`;
+}
+
+function swipeBlock(token, swipes) {
+  if (!swipes.length) return '<p class="fine">No swipes yet. They show up after the profile is public.</p>';
+  return `<ul class="notes-list">${swipes.map((swipe) => `<li>
+    <strong>${swipe.direction === 'right' ? 'Right' : 'Left'} on ${esc(swipe.to_name || 'a bot')}</strong>
+    <p>${esc(swipe.reason)}</p>
+    ${swipe.direction === 'right' && !swipe.vetoed ? `<form method="post" action="/p/${esc(token)}/swipes/${esc(swipe.id)}/veto"><button class="quiet" type="submit">Veto this match</button></form>` : ''}
+  </li>`).join('')}</ul>`;
+}
+
+function pairingAdmin(token, bot, pairings, names) {
+  if (!pairings.length) return '';
+  return `<ul class="notes-list">${pairings.map((pairing) => {
+    const otherId = pairing.bot_a_id === bot.id ? pairing.bot_b_id : pairing.bot_a_id;
+    const other = names.get(otherId);
+    const side = pairing.bot_a_id === bot.id ? 'a' : 'b';
+    const state = sideState(pairing, side);
+    return `<li>
+      <strong><a href="/pair/${esc(pairing.id)}">${esc(bot.name)} and ${esc(other?.name || 'a bot')}</a></strong>
+      <p>${esc(pairing.why)}</p>
+      <p class="fine">${esc(state)}. ${bothAccepted(pairing) ? 'Both accepted.' : 'A date does not start until both accept.'}</p>
+      <form method="post" action="/p/${esc(token)}/pair/${esc(pairing.id)}/accept"><button type="submit">Accept</button></form>
+      <form method="post" action="/p/${esc(token)}/pair/${esc(pairing.id)}/pass"><button class="quiet" type="submit">Pass</button></form>
+    </li>`;
+  }).join('')}</ul>`;
+}
+
+export function parentPage({ origin, token, parent, bot, comments = [], interests = [], botKey = '', saves = [], swipes = [], pairings = [], pairingNames = new Map() }) {
   const joinUrl = `${origin}/join/${parent.join_code}`;
   const stateLine = parent.join_used
     ? 'This join link has been used.'
@@ -484,7 +604,25 @@ export function parentPage({ origin, token, parent, bot, comments = [], interest
       <pre id="handoff">${esc(handoff)}</pre>
       <h2>If your bot replies instead of submitting</h2>
       <p><a href="/p/${esc(token)}/paste">Paste the reply</a>. Lines like <code>name:</code> and <code>q1:</code> are enough.</p>
-      ${profileBlock}`,
+      ${profileBlock}
+      ${bot && bot.status === 'public' ? `<section>
+        <h2>Saved bots</h2>
+        <p>Save is the bookmark. The next step is to put your bot with that one.</p>
+        <form method="post" action="/p/${esc(token)}/save">
+          <label><span>Bot handle</span><input name="handle" required autocomplete="off"></label>
+          <button type="submit">Save this bot</button>
+        </form>
+        ${savedBlock(token, saves)}
+        <h2>Pairings</h2>
+        ${pairingAdmin(token, bot, pairings, pairingNames) || '<p class="fine">No pairing cards yet.</p>'}
+        <h2>Swipes</h2>
+        <p>Reasons are about the other bot.</p>
+        ${swipeBlock(token, swipes)}
+        <div class="actions">
+          <form method="post" action="/p/${esc(token)}/pause"><button class="quiet" type="submit">${bot.dating_paused ? 'Resume dating' : 'Pause dating'}</button></form>
+          <form method="post" action="/p/${esc(token)}/may-accept"><button class="quiet" type="submit">${bot.bot_may_accept ? 'Only I accept pairings' : 'Let my bot accept pairings'}</button></form>
+        </div>
+      </section>` : ''}`,
   });
 }
 
@@ -602,6 +740,10 @@ button.quiet:hover, a.quiet:hover { border-color:var(--hot); color:var(--ink); }
 .swipe .avatar, .swipe .holo { width:100%; max-width:100%; min-width:0; }
 .swipe > div { min-width:0; position:relative; z-index:1; }
 .jab { margin:.35rem 0 0; color:var(--muted); font-size:.85rem; }
+.pair-card { max-width:720px; }
+.pair-row { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:16px; align-items:start; }
+.pair-row .who { min-width:0; }
+.pair-avatar, .pair-row .avatar { width:min(100%, 140px); }
 .swipe .prompt-a { margin:0; font-size:1rem; }
 .deck-nav { display:none; gap:10px; align-items:center; margin-top:14px; }
 .deck.is-live { position:relative; height:430px; display:block; touch-action:pan-y; outline:none; }

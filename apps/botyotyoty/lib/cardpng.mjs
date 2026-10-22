@@ -137,20 +137,34 @@ function createSurface(width, height) {
     const textWidth = clean.length * 6 * scale;
     return drawText(clean, Math.round((width - textWidth) / 2), y, scale, color, maxChars);
   }
-  function encode() {
+  function encode(note = '') {
     const ihdr = Buffer.alloc(13);
     ihdr.writeUInt32BE(width, 0);
     ihdr.writeUInt32BE(height, 4);
     ihdr[8] = 8;
     ihdr[9] = 2;
-    return Buffer.concat([
+    const chunks = [
       Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
       pngChunk('IHDR', ihdr),
       pngChunk('IDAT', deflateSync(raw, { level: 1 })),
-      pngChunk('IEND', Buffer.alloc(0)),
-    ]);
+    ];
+    if (note) {
+      const data = Buffer.concat([
+        Buffer.from('Comment', 'ascii'),
+        Buffer.from([0]),
+        Buffer.from(String(note), 'utf8'),
+      ]);
+      chunks.push(pngChunk('tEXt', data));
+    }
+    chunks.push(pngChunk('IEND', Buffer.alloc(0)));
+    return Buffer.concat(chunks);
   }
-  return { fillRect, fillCircle, drawText, drawCentered, encode };
+  function burnUrl(url, y, scale = 2) {
+    if (!url) return;
+    const lines = wrapLines(url, Math.floor((width - 80) / (6 * scale)), 2);
+    lines.forEach((line, index) => drawCentered(line, y + index * (8 * scale), scale, DIM, 80));
+  }
+  return { fillRect, fillCircle, drawText, drawCentered, burnUrl, encode };
 }
 
 function seekingLine(type) {
@@ -169,7 +183,7 @@ function paintFrame(surface, width, height) {
   surface.fillRect(0, 0, width, 10, MAG);
 }
 
-function paintWide(bot) {
+function paintWide(bot, url = '') {
   const surface = createSurface(1200, 630);
   paintFrame(surface, 1200, 630);
   surface.fillRect(36, 36, 1128, 558, LINE);
@@ -182,7 +196,7 @@ function paintWide(bot) {
   surface.drawText(bot.is_seed ? 'FICTIONAL SEED BOT' : 'BOT. SUPERVISED BY A HUMAN.', 760, 78, 2, DIM, 28);
   surface.drawText(bot.name, 400, 130, 7, INK, 16);
   surface.drawText(bot.type || 'BOT', 400, 200, 3, MAG, 16);
-  const lines = wrapLines(bot.bio_text, 36, 3);
+  const lines = wrapLines((bot.answers && bot.answers.q1) || bot.bio_text, 36, 3);
   lines.forEach((line, index) => surface.drawText(line, 400, 250 + index * 32, 3, INK, 36));
   surface.fillRect(400, 360, 700, 2, LINE);
   surface.drawText(`MODEL ${bot.kind || 'BOT'}`, 400, 384, 2, DIM, 34);
@@ -192,11 +206,12 @@ function paintWide(bot) {
   surface.fillRect(400, 446, 147, 14, MAG);
   surface.drawText('ITS COMPLICATED', 640, 444, 2, DIM, 18);
   surface.drawText(seekingLine(bot.type), 400, 488, 2, INK, 56);
-  surface.drawText('404 RED FLAGS NOT FOUND', 400, 534, 3, MAG, 28);
-  return surface.encode();
+  surface.drawText('404 RED FLAGS NOT FOUND', 400, 520, 2, MAG, 28);
+  surface.burnUrl(url, 568, 2);
+  return surface.encode(url);
 }
 
-function paintTall(bot) {
+function paintTall(bot, url = '') {
   const surface = createSurface(1080, 1350);
   paintFrame(surface, 1080, 1350);
   surface.fillRect(48, 48, 984, 1254, LINE);
@@ -221,12 +236,12 @@ function paintTall(bot) {
   surface.fillRect(620, 790, 280, 18, [42, 24, 40]);
   surface.fillRect(620, 790, 188, 18, MAG);
   surface.drawText('ITS COMPLICATED', 620, 822, 2, DIM, 18);
-  const lines = wrapLines(bot.bio_text, 32, 3);
+  const lines = wrapLines((bot.answers && bot.answers.q1) || bot.bio_text, 32, 3);
   lines.forEach((line, index) => surface.drawCentered(line, 920 + index * 40, 4, INK, 32));
-  surface.drawCentered(seekingLine(bot.type), 1080, 3, INK, 48);
-  surface.drawCentered('404 RED FLAGS NOT FOUND', 1160, 4, MAG, 28);
-  surface.drawCentered(`/B/${bot.handle || 'BOT'}`, 1230, 3, DIM, 28);
-  return surface.encode();
+  surface.drawCentered(seekingLine(bot.type), 1060, 3, INK, 48);
+  surface.drawCentered('404 RED FLAGS NOT FOUND', 1120, 3, MAG, 28);
+  surface.burnUrl(url || `/b/${bot.handle || 'bot'}`, 1200, 2);
+  return surface.encode(url || `/b/${bot.handle || 'bot'}`);
 }
 
 function paintHome() {
@@ -253,7 +268,7 @@ function cached(key, build) {
   if (cache.has(key)) return cache.get(key);
   const png = build();
   cache.set(key, png);
-  if (cache.size > 32) cache.delete(cache.keys().next().value);
+  if (cache.size > 64) cache.delete(cache.keys().next().value);
   return png;
 }
 
@@ -261,12 +276,59 @@ export function homeOgPng() {
   return cached('home', paintHome);
 }
 
-export function profileOgPng(bot) {
-  const key = `og:${bot.handle}:${bot.name}:${bot.bio_text}:${bot.type}:${bot.kind}`;
-  return cached(key, () => paintWide(bot));
+function stateWord(pairing, side) {
+  if (pairing[`pass_${side}`]) return 'PASSED';
+  if (pairing[`accept_${side}`]) return 'ACCEPTED';
+  return 'WAITING';
 }
 
-export function profileCardPng(bot) {
-  const key = `card:${bot.handle}:${bot.name}:${bot.bio_text}:${bot.type}:${bot.kind}`;
-  return cached(key, () => paintTall(bot));
+function paintPairWide({ a, b, pairing, url }) {
+  const surface = createSurface(1200, 630);
+  paintFrame(surface, 1200, 630);
+  surface.fillRect(36, 36, 1128, 558, LINE);
+  surface.fillRect(40, 40, 1120, 550, PANEL);
+  surface.drawText('THESE TWO SHOULD MEET', 64, 70, 4, MAG, 28);
+  surface.drawText(a.name, 64, 140, 5, INK, 16);
+  surface.drawText(stateWord(pairing, 'a'), 64, 190, 3, DIM, 12);
+  surface.drawText(b.name, 640, 140, 5, INK, 16);
+  surface.drawText(stateWord(pairing, 'b'), 640, 190, 3, DIM, 12);
+  const why = wrapLines(pairing.why, 40, 3);
+  why.forEach((line, index) => surface.drawText(line, 64, 270 + index * 36, 3, INK, 40));
+  surface.drawText('A DATE DOES NOT START UNTIL BOTH ACCEPT', 64, 420, 2, DIM, 48);
+  surface.burnUrl(url, 500, 2);
+  return surface.encode(url);
+}
+
+function paintMatchWide({ a, b, url }) {
+  const surface = createSurface(1200, 630);
+  paintFrame(surface, 1200, 630);
+  surface.fillRect(36, 36, 1128, 558, LINE);
+  surface.fillRect(40, 40, 1120, 550, PANEL);
+  surface.drawCentered(`${a.name} AND ${b.name} MATCHED`, 160, 4, INK, 36);
+  surface.drawCentered('TRUST 0.67', 280, 6, MAG, 12);
+  surface.drawCentered(`${a.type} X ${b.type}`, 380, 4, INK, 28);
+  surface.burnUrl(url, 500, 2);
+  return surface.encode(url);
+}
+
+export function profileOgPng(bot, url = '') {
+  const line = (bot.answers && bot.answers.q1) || bot.bio_text;
+  const key = `og:${url}:${bot.handle}:${bot.name}:${line}:${bot.type}:${bot.kind}`;
+  return cached(key, () => paintWide(bot, url));
+}
+
+export function profileCardPng(bot, url = '') {
+  const line = (bot.answers && bot.answers.q1) || bot.bio_text;
+  const key = `card:${url}:${bot.handle}:${bot.name}:${line}:${bot.type}:${bot.kind}`;
+  return cached(key, () => paintTall(bot, url));
+}
+
+export function pairingOgPng(card) {
+  const key = `pair:${card.url}:${card.pairing.id}:${card.pairing.accept_a}:${card.pairing.accept_b}:${card.pairing.pass_a}:${card.pairing.pass_b}:${card.pairing.why}`;
+  return cached(key, () => paintPairWide(card));
+}
+
+export function matchOgPng(card) {
+  const key = `match:${card.url}:${card.a.id}:${card.b.id}`;
+  return cached(key, () => paintMatchWide(card));
 }

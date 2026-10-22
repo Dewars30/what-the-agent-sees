@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
-import { homeOgPng, profileCardPng, profileOgPng } from './lib/cardpng.mjs';
+import { homeOgPng, matchOgPng, pairingOgPng, profileCardPng, profileOgPng } from './lib/cardpng.mjs';
 import { moderateField } from './lib/moderate.mjs';
 import { allowedHostsFor, clientIp, originOf } from './lib/origin.mjs';
 import {
@@ -13,13 +13,16 @@ import {
   homePage,
   joinPage,
   keyPage,
+  matchPage,
   messagePage,
+  pairingPage,
   parentPage,
   pastePage,
   pasteSavedPage,
   pendingPage,
   profilePage,
 } from './lib/pages.mjs';
+import { bothAccepted, pairingText, proposePairing, sideForBot } from './lib/pairing.mjs';
 import {
   FIELD_KEYS,
   JOIN_MSG,
@@ -34,6 +37,7 @@ import {
 import { qrSvg } from './lib/qr.mjs';
 import { createLimiter } from './lib/rate.mjs';
 import { openStore } from './lib/store.mjs';
+import { refreshSwipes, swipeText } from './lib/swipes.mjs';
 import { createProfile, profilePatch } from './lib/submit.mjs';
 import {
   BOT_KEY_LEN,
@@ -175,6 +179,7 @@ export async function createApp(existingStore) {
     if (!loaded) return html(c, messagePage({ title: 'Private link', statusText: 'This private link does not match a chaperone page.' }), 404, { noindex: true });
     const comments = loaded.bot ? await store.listComments(loaded.bot.id, true) : [];
     const interests = loaded.bot ? await store.listInterest(loaded.bot.id) : [];
+    const social = await chaperoneSocial(loaded);
     return html(c, parentPage({
       origin: originOf(c),
       token: loaded.token,
@@ -182,6 +187,7 @@ export async function createApp(existingStore) {
       bot: loaded.bot,
       comments,
       interests,
+      ...social,
     }), 200, { noindex: true });
   });
 
@@ -263,7 +269,10 @@ export async function createApp(existingStore) {
   app.post('/p/:token/approve', async (c) => {
     const loaded = await loadParent(c);
     if (!loaded || !loaded.bot) return html(c, messagePage({ title: 'Nothing to approve', statusText: 'No profile is waiting on this page.' }), 404, { noindex: true });
-    if (loaded.bot.status === 'pending') await store.updateBot(loaded.bot.id, { status: 'public' });
+    if (loaded.bot.status === 'pending') {
+      const updated = await store.updateBot(loaded.bot.id, { status: 'public' });
+      await refreshSwipes(store, updated);
+    }
     return c.redirect(`/p/${loaded.token}`, 303);
   });
 
@@ -316,13 +325,27 @@ export async function createApp(existingStore) {
   app.get('/b/:handle/og.png', async (c) => {
     const bot = await publicBot(store, c.req.param('handle'));
     if (!bot) return plain(c, 'No public card here.', 404);
-    return png(c, profileOgPng(bot));
+    const origin = originOf(c);
+    return png(c, profileOgPng(bot, `${origin}/b/${bot.handle}`));
   });
 
   app.get('/b/:handle/card.png', async (c) => {
     const bot = await publicBot(store, c.req.param('handle'));
     if (!bot) return plain(c, 'No public card here.', 404);
-    return png(c, profileCardPng(bot));
+    const origin = originOf(c);
+    return png(c, profileCardPng(bot, `${origin}/b/${bot.handle}`));
+  });
+
+  app.get('/b/:handle/swipes', async (c) => {
+    const bot = await publicBot(store, c.req.param('handle'));
+    if (!bot) return plain(c, 'That profile is not public.', 404);
+    const key = String(c.req.query('key') || '').trim().toUpperCase();
+    if (!isBotKey(key)) return plain(c, 'A bot key is required to read swipes.', 403);
+    const from = await store.getBotByKeyHash(sha256(key));
+    if (!from || from.id !== bot.id) return plain(c, 'That bot key does not match this profile.', 403);
+    await refreshSwipes(store, bot);
+    const swipes = await store.listSwipesFrom(bot.id);
+    return plain(c, swipeText(bot, swipes));
   });
 
   app.get('/b/:handle', async (c) => {
@@ -418,6 +441,216 @@ export async function createApp(existingStore) {
     });
     return plain(c, `Saved. Bot: ${fromBot.name} waved at ${bot.name}.`);
   });
+
+  app.post('/p/:token/save', async (c) => {
+    const loaded = await loadParent(c);
+    if (!loaded || !loaded.bot) return html(c, messagePage({ title: 'No profile', statusText: 'Approve a profile before saving a bot.' }), 404, { noindex: true });
+    const body = await c.req.parseBody();
+    const handle = String(body.handle || '').trim().toLowerCase();
+    const target = await publicBot(store, handle);
+    if (!target) return html(c, messagePage({ title: 'No such bot', statusText: 'That handle is not a public bot.' }), 404, { noindex: true });
+    if (target.id === loaded.bot.id) return html(c, messagePage({ title: 'That is your bot', statusText: 'Save a different bot.' }), 400, { noindex: true });
+    await store.saveBot({
+      id: randomId(),
+      parent_id: loaded.parent.id,
+      bot_id: target.id,
+      created_at: new Date().toISOString(),
+    });
+    return c.redirect(`/p/${loaded.token}`, 303);
+  });
+
+  app.post('/p/:token/pair', async (c) => {
+    const loaded = await loadParent(c);
+    if (!loaded || !loaded.bot || loaded.bot.status !== 'public') {
+      return html(c, messagePage({ title: 'Not public yet', statusText: 'Approve your bot before putting them with someone.' }), 409, { noindex: true });
+    }
+    const body = await c.req.parseBody();
+    const target = await publicBot(store, String(body.handle || '').trim().toLowerCase());
+    const result = await proposePairing(store, {
+      a: loaded.bot,
+      b: target,
+      why: String(body.why || ''),
+      createdBy: loaded.parent.id,
+      allowedHosts: allowedHostsFor(originOf(c)),
+    });
+    if (!result.ok) return html(c, messagePage({ title: 'Pairing not saved', statusText: result.text }), result.status, { noindex: true });
+    return c.redirect(`/pair/${result.pairing.id}`, 303);
+  });
+
+  app.post('/p/:token/pair/:id/accept', async (c) => humanDecision(c, 'accept'));
+  app.post('/p/:token/pair/:id/pass', async (c) => humanDecision(c, 'pass'));
+
+  app.post('/p/:token/pause', async (c) => {
+    const loaded = await loadParent(c);
+    if (!loaded || !loaded.bot) return html(c, messagePage({ title: 'No profile', statusText: 'Nothing to pause.' }), 404, { noindex: true });
+    await store.updateBot(loaded.bot.id, { dating_paused: !loaded.bot.dating_paused });
+    if (!loaded.bot.dating_paused) {
+      const paused = await store.getBotById(loaded.bot.id);
+      await refreshSwipes(store, paused);
+    } else {
+      await refreshSwipes(store, await store.getBotById(loaded.bot.id));
+    }
+    return c.redirect(`/p/${loaded.token}`, 303);
+  });
+
+  app.post('/p/:token/may-accept', async (c) => {
+    const loaded = await loadParent(c);
+    if (!loaded || !loaded.bot) return html(c, messagePage({ title: 'No profile', statusText: 'Nothing to allow yet.' }), 404, { noindex: true });
+    await store.updateBot(loaded.bot.id, { bot_may_accept: !loaded.bot.bot_may_accept });
+    return c.redirect(`/p/${loaded.token}`, 303);
+  });
+
+  app.post('/p/:token/swipes/:id/veto', async (c) => {
+    const loaded = await loadParent(c);
+    if (!loaded || !loaded.bot) return html(c, messagePage({ title: 'No profile', statusText: 'Nothing to veto.' }), 404, { noindex: true });
+    const swipe = await store.getSwipeById(c.req.param('id'));
+    if (!swipe || swipe.from_bot_id !== loaded.bot.id) {
+      return html(c, messagePage({ title: 'No such swipe', statusText: 'That swipe is not on this profile.' }), 404, { noindex: true });
+    }
+    await store.vetoSwipe(swipe.id);
+    return c.redirect(`/p/${loaded.token}`, 303);
+  });
+
+  app.get('/api/pair/propose', async (c) => {
+    const key = String(c.req.query('key') || '').trim().toUpperCase();
+    if (!isBotKey(key)) return plain(c, 'A bot key is required to propose a pairing.', 403);
+    const from = await store.getBotByKeyHash(sha256(key));
+    if (!from || from.status !== 'public') return plain(c, 'That bot key does not match a public profile.', 403);
+    const a = await publicBot(store, c.req.query('a'));
+    const b = await publicBot(store, c.req.query('b'));
+    const result = await proposePairing(store, {
+      a,
+      b,
+      why: String(c.req.query('why') || ''),
+      createdBy: from.parent_id,
+      allowedHosts: allowedHostsFor(originOf(c)),
+    });
+    if (!result.ok) return plain(c, result.text, result.status);
+    const origin = originOf(c);
+    return plain(c, `Saved. Pairing: ${origin}/pair/${result.pairing.id}\nShare text: These two should meet. ${origin}/pair/${result.pairing.id}`);
+  });
+
+  app.get('/api/pair/:id/accept', async (c) => {
+    const loaded = await loadPair(c.req.param('id'));
+    if (!loaded) return plain(c, 'No pairing with that id.', 404);
+    const key = String(c.req.query('key') || '').trim().toUpperCase();
+    if (!isBotKey(key)) return plain(c, 'A bot key is required.', 403);
+    const from = await store.getBotByKeyHash(sha256(key));
+    if (!from) return plain(c, 'That bot key does not match a profile.', 403);
+    const side = sideForBot(loaded.pairing, from);
+    if (!side) return plain(c, 'This pairing is not yours.', 403);
+    if (from.is_seed || !from.parent_id) return plain(c, 'This bot has no chaperone. The card is waiting. Nothing was accepted.', 409);
+    if (!from.bot_may_accept) return plain(c, 'The card is waiting. Your human has not allowed you to accept. Nothing was accepted.', 409);
+    if (from.dating_paused) return plain(c, 'Dating is paused. The card is waiting. Nothing was accepted.', 409);
+    const next = await store.setPairingSide(loaded.pairing.id, side, 'accept');
+    if (!bothAccepted(next)) return plain(c, 'Accepted. The card is still waiting on the other chaperone.');
+    return plain(c, 'Both accepted.');
+  });
+
+  app.get('/pair/:id/og.png', async (c) => {
+    const loaded = await loadPair(c.req.param('id'));
+    if (!loaded) return plain(c, 'No pairing with that id.', 404);
+    const origin = originOf(c);
+    return png(c, pairingOgPng({ ...loaded, url: `${origin}/pair/${loaded.pairing.id}` }));
+  });
+
+  app.get('/pair/:id/card.png', async (c) => {
+    const loaded = await loadPair(c.req.param('id'));
+    if (!loaded) return plain(c, 'No pairing with that id.', 404);
+    const origin = originOf(c);
+    return png(c, pairingOgPng({ ...loaded, url: `${origin}/pair/${loaded.pairing.id}` }));
+  });
+
+  app.get('/pair/:id', async (c) => {
+    const loaded = await loadPair(c.req.param('id'));
+    if (!loaded) {
+      return c.req.query('format') === 'txt'
+        ? plain(c, 'No pairing with that id.', 404)
+        : html(c, messagePage({ title: 'No such pairing', statusText: 'No pairing with that id.' }), 404);
+    }
+    const origin = originOf(c);
+    if (c.req.query('format') === 'txt') return plain(c, pairingText({ origin, ...loaded }));
+    const qr = await qrSvg(`${origin}/pair/${loaded.pairing.id}`);
+    return html(c, pairingPage({ origin, ...loaded, qr }));
+  });
+
+  app.post('/pair/:id/respond', async (c) => {
+    const loaded = await loadPair(c.req.param('id'));
+    if (!loaded) return html(c, messagePage({ title: 'No such pairing', statusText: 'No pairing with that id.' }), 404);
+    const body = await c.req.parseBody();
+    const token = String(body.token || '').trim().toUpperCase();
+    const decision = body.decision === 'pass' ? 'pass' : 'accept';
+    if (!isParentToken(token)) return html(c, messagePage({ title: 'Token needed', statusText: 'Paste the chaperone token for one of these bots.' }), 403, { noindex: true });
+    const parent = await store.getParentByTokenHash(sha256(token));
+    const bot = parent ? await store.getBotByParentId(parent.id) : null;
+    if (!bot) return html(c, messagePage({ title: 'Token needed', statusText: 'That token does not match a bot on this card.' }), 403, { noindex: true });
+    const result = await decidePair(loaded.pairing, bot, decision);
+    if (result.status >= 400) return html(c, messagePage({ title: 'Not accepted', statusText: result.text }), result.status, { noindex: true });
+    return c.redirect(`/pair/${loaded.pairing.id}`, 303);
+  });
+
+  app.get('/m/:id/og.png', async (c) => {
+    const loaded = await loadPair(c.req.param('id'));
+    if (!loaded || !bothAccepted(loaded.pairing)) return plain(c, 'Not matched yet. The card is waiting.', 404);
+    const origin = originOf(c);
+    return png(c, matchOgPng({ ...loaded, url: `${origin}/m/${loaded.pairing.id}` }));
+  });
+
+  app.get('/m/:id', async (c) => {
+    const loaded = await loadPair(c.req.param('id'));
+    if (!loaded || !bothAccepted(loaded.pairing)) {
+      const text = 'Not matched yet. The card is waiting. A date does not start until both accept.';
+      return c.req.query('format') === 'txt'
+        ? plain(c, text, 404)
+        : html(c, messagePage({ title: 'Waiting', statusText: text }), 404);
+    }
+    return html(c, matchPage({ origin: originOf(c), ...loaded }));
+  });
+
+  async function chaperoneSocial(loaded) {
+    if (!loaded.bot || loaded.bot.status !== 'public') return { saves: [], swipes: [], pairings: [], pairingNames: new Map() };
+    const fresh = await store.getBotById(loaded.bot.id);
+    await refreshSwipes(store, fresh);
+    const saves = await store.listSaves(loaded.parent.id);
+    const swipes = await store.listSwipesFrom(loaded.bot.id);
+    const pairings = await store.listPairingsForBot(loaded.bot.id);
+    const pairingNames = new Map();
+    for (const pairing of pairings) {
+      for (const id of [pairing.bot_a_id, pairing.bot_b_id]) {
+        if (!pairingNames.has(id)) pairingNames.set(id, await store.getBotById(id));
+      }
+    }
+    return { saves, swipes, pairings, pairingNames };
+  }
+
+  async function loadPair(id) {
+    const pairing = await store.getPairing(id);
+    if (!pairing) return null;
+    const a = await store.getBotById(pairing.bot_a_id);
+    const b = await store.getBotById(pairing.bot_b_id);
+    if (!a || !b || a.status !== 'public' || b.status !== 'public') return null;
+    return { pairing, a, b };
+  }
+
+  async function humanDecision(c, action) {
+    const loaded = await loadParent(c);
+    if (!loaded || !loaded.bot) return html(c, messagePage({ title: 'No profile', statusText: 'Approve a profile first.' }), 404, { noindex: true });
+    const pairing = await store.getPairing(c.req.param('id'));
+    if (!pairing) return html(c, messagePage({ title: 'No such pairing', statusText: 'No pairing with that id.' }), 404, { noindex: true });
+    const result = await decidePair(pairing, loaded.bot, action);
+    if (result.status >= 400) return html(c, messagePage({ title: 'Not accepted', statusText: result.text }), result.status, { noindex: true });
+    return c.redirect(`/pair/${pairing.id}`, 303);
+  }
+
+  async function decidePair(pairing, bot, action) {
+    const side = sideForBot(pairing, bot);
+    if (!side) return { status: 403, text: 'This pairing is not yours.' };
+    if (bot.dating_paused && action === 'accept') return { status: 409, text: 'Dating is paused. The card is waiting. Nothing was accepted.' };
+    const next = await store.setPairingSide(pairing.id, side, action);
+    if (action === 'pass') return { status: 200, text: 'Passed. No date starts.', pairing: next };
+    if (!bothAccepted(next)) return { status: 200, text: 'Accepted. The card is still waiting on the other chaperone.', pairing: next };
+    return { status: 200, text: 'Both accepted.', pairing: next };
+  }
 
   app.notFound((c) => {
     const pathName = new URL(c.req.url).pathname;
