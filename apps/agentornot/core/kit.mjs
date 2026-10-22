@@ -305,7 +305,7 @@ export function renderOgPng({
   ]);
 }
 
-export function shell({ title, description, body, head = '', nav = true, footer = true, ogImage = '/og.png', challenger = null, navLinks = null }) {
+export function shell({ title, description, body, head = '', nav = true, footer = true, ogImage = '/og.png', challenger = null, navLinks = null, footerNote = null }) {
   const pngOg = String(ogImage || '/og.png').replace(/\/og\.svg(\?|$)/, '/og.png$1');
   const links = Array.isArray(navLinks) && navLinks.length ? navLinks : [['/index', 'The index'], ['/method', 'Method']];
   const banner = challenger && challenger.rival
@@ -330,6 +330,6 @@ export function shell({ title, description, body, head = '', nav = true, footer 
 ${nav ? `<header class="top"><a class="brand" href="/"><span class="dot"></span>AgentScore</a>
 <nav>${links.map(([href, label]) => `<a href="${esc(href)}">${esc(label)}</a>`).join('')}</nav></header>` : ''}
 ${banner}${body}
-${footer ? `<footer class="bot"><span>AgentScore measures how usable a page is to a software agent, not to a person.</span><span>No tracking. Scanned pages are not stored.</span></footer>` : ''}
+${footer ? `<footer class="bot"><span>AgentScore measures how usable a page is to a software agent, not to a person.</span><span>${esc(footerNote == null ? 'No tracking. Scanned pages are not stored.' : footerNote)}</span></footer>` : ''}
 </div></body></html>`;
 }

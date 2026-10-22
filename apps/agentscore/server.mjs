@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { analyze, HttpError } from './core/page.mjs';
 import { shell, esc, quoteIntent, replyIntent, repostIntent, viralBar, renderOgSvg, renderOgPng } from './core/kit.mjs';
 import { synteqPage, demoDocument, DEMO_CSP } from './synteq-page.mjs';
+import { buildFix } from './fix.mjs';
+import { packReport, kitSection, reportShell } from './report.mjs';
+import { handleGithub, githubFixEnabled } from './github-fix.mjs';
 
 const NAV = [
   ['/index', 'The index'],
@@ -12,7 +15,31 @@ const NAV = [
   ['/synteq', 'Synteq'],
 ];
 function view(opts) {
-  return shell({ ...opts, navLinks: NAV });
+  return shell({
+    ...opts,
+    navLinks: NAV,
+    footerNote: 'No tracking. Reports stay in the link, not on the server.',
+  });
+}
+
+function readBody(req, limit = 32768) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let n = 0;
+    let failed = false;
+    req.on('data', (c) => {
+      n += c.length;
+      if (n > limit) {
+        failed = true;
+        reject(new Error('body too large'));
+        req.destroy();
+        return;
+      }
+      chunks.push(c);
+    });
+    req.on('end', () => { if (!failed) resolve(Buffer.concat(chunks).toString('utf8')); });
+    req.on('error', (e) => { if (!failed) reject(e); });
+  });
 }
 
 const __dir = path.dirname(fileURLToPath(import.meta.url));
@@ -62,7 +89,7 @@ function findingRow(f) {
   </div>`;
 }
 
-function resultView(r, rawInput) {
+function resultView(r, rawInput, kitInfo = null) {
   const { scored, page } = r;
   const shareText = `${page.host} scores ${scored.score}/100 for AI agents (${scored.verdict}).\n\nCan your site beat ${page.host}'s ${scored.score}/100? ${APP}/?beat=${scored.score}&rival=${encodeURIComponent(page.host)}`;
   const grokText = `${page.host} scores ${scored.score}/100 on how usable it is to an AI agent, with ${scored.fails.length} blockers. @grok verify this\n\nscored by ${APP}/?url=${encodeURIComponent(page.url)}`;
@@ -126,6 +153,8 @@ function resultView(r, rawInput) {
     <div class="kicker">Summary</div>
     <p class="muted small" style="margin:10px 0 0;max-width:76ch">${esc(r.tlDr)} The page answered ${esc(page.lang ? 'lang=' + page.lang : 'no lang')}, ${page.headings.length} headings, ${page.links.length} links, ${page.forms.length} form${page.forms.length === 1 ? '' : 's'}, ${page.images.length} images, and ${page.mainWords} words of text before any script executed.</p>
   </section>
+  ${kitInfo?.packed ? kitSection(kitInfo.packed, APP, { github: githubFixEnabled() }) : ''}
+  ${kitInfo?.error ? '<section class="card pad"><div class="kicker">Fix kit</div><p class="muted small">Fix kit did not run on this page.</p></section>' : ''}
 </main>
 <script>
 (() => {
@@ -320,6 +349,13 @@ const server = http.createServer(async (req, res) => {
     res.end(body);
   };
   try {
+    const gh = await handleGithub(req, url, {
+      appOrigin: APP,
+      view,
+      readBody,
+      secure: !/^(localhost|127\.0\.0\.1)(:|$)/.test(String(req.headers.host || '')),
+    });
+    if (gh) return send(gh.status, gh.type, gh.body, gh.headers);
     if (url.pathname === '/og.svg' || url.pathname === '/og.png') {
       const cardOpts = {
         app: 'AGENTSCORE',
@@ -361,7 +397,8 @@ Saved homepage, the same file with markup edits, and that file with scripts remo
 Demo HTML (forms do not submit, not affiliated with Synteq): ${APP}/synteq/patched and ${APP}/synteq/static
 
 ## Scope
-Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking; scanned pages are not stored.
+Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking. A scan report is encoded in the link. Nothing is stored on the server.
+Synteq Apps launched 2026-10-20 and are stateless. https://synteq.com/llms.txt
 `);
     }
     if (url.pathname === '/sitemap.xml') return send(200, 'application/xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${APP}/</loc></url><url><loc>${APP}/index</loc></url><url><loc>${APP}/method</loc></url><url><loc>${APP}/refused</loc></url><url><loc>${APP}/synteq</loc></url></urlset>`);
@@ -381,6 +418,13 @@ Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking; scan
       const r = await analyze(target);
       return send(200, 'application/json', JSON.stringify({ score: r.scored.score, grade: r.scored.grade, verdict: r.scored.verdict, dims: r.scored.dims, tlDr: r.tlDr }));
     }
+    if (url.pathname === '/report' || url.pathname === '/report/') {
+      return send(200, 'text/html; charset=utf-8', view({
+        title: 'Fix report',
+        description: 'The report is in the link. Nothing is stored on the server.',
+        body: reportShell({ github: githubFixEnabled() }),
+      }));
+    }
     if (url.pathname === '/') {
       const target = url.searchParams.get('url');
       const rival = url.searchParams.get('rival');
@@ -390,7 +434,22 @@ Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking; scan
       try {
         const r = await analyze(target);
         if (r.blocked) return send(200, 'text/html; charset=utf-8', blockedView(r, target));
-        return send(200, 'text/html; charset=utf-8', resultView(r, target));
+        let kitInfo = null;
+        try {
+          const kit = buildFix(r.page.html, r.page.url, r.extras);
+          const packed = packReport({
+            url: r.page.url,
+            host: r.page.host,
+            createdAt: new Date().toISOString(),
+            extras: r.extras,
+            kit,
+          });
+          kitInfo = { packed };
+        } catch (err) {
+          console.error(err);
+          kitInfo = { error: true };
+        }
+        return send(200, 'text/html; charset=utf-8', resultView(r, target, kitInfo));
       } catch (e) {
         const err = e instanceof HttpError ? e : new HttpError(500, 'Something broke while scanning that page.');
         if (err.status >= 500) console.error(e);
