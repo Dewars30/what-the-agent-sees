@@ -5,7 +5,7 @@ name: agentscore-sha
 on:
   push:
     branches:
-      - cursor/agentscore-synteq-proof-14b7
+      - cursor/agentscore-fix-kit-14b7
   workflow_dispatch:
 
 jobs:

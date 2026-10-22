@@ -7,6 +7,7 @@ import { shell, esc, quoteIntent, replyIntent, repostIntent, viralBar, renderOgS
 import { synteqPage, demoDocument, DEMO_CSP } from './synteq-page.mjs';
 import { buildFix } from './fix.mjs';
 import { saveReport, loadReport, kitSection, reportBody, standaloneReport, fixesDiff } from './report.mjs';
+import { handleGithub, githubFixEnabled } from './github-fix.mjs';
 
 const NAV = [
   ['/index', 'The index'],
@@ -18,6 +19,26 @@ function view(opts) {
     ...opts,
     navLinks: NAV,
     footerNote: 'No tracking. A scan report is stored so its link keeps working.',
+  });
+}
+
+function readBody(req, limit = 8192) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let n = 0;
+    let failed = false;
+    req.on('data', (c) => {
+      n += c.length;
+      if (n > limit) {
+        failed = true;
+        reject(new Error('body too large'));
+        req.destroy();
+        return;
+      }
+      chunks.push(c);
+    });
+    req.on('end', () => { if (!failed) resolve(Buffer.concat(chunks).toString('utf8')); });
+    req.on('error', (e) => { if (!failed) reject(e); });
   });
 }
 
@@ -132,7 +153,7 @@ function resultView(r, rawInput, kitInfo = null) {
     <div class="kicker">Summary</div>
     <p class="muted small" style="margin:10px 0 0;max-width:76ch">${esc(r.tlDr)} The page answered ${esc(page.lang ? 'lang=' + page.lang : 'no lang')}, ${page.headings.length} headings, ${page.links.length} links, ${page.forms.length} form${page.forms.length === 1 ? '' : 's'}, ${page.images.length} images, and ${page.mainWords} words of text before any script executed.</p>
   </section>
-  ${kitInfo?.kit ? kitSection(kitInfo.kit, kitInfo.id, APP) : ''}
+  ${kitInfo?.kit ? kitSection(kitInfo.kit, kitInfo.id, APP, { github: githubFixEnabled() }) : ''}
   ${kitInfo?.error ? '<section class="card pad"><div class="kicker">Fix kit</div><p class="muted small">Fix kit did not run on this page.</p></section>' : ''}
 </main>
 <script>
@@ -328,6 +349,14 @@ const server = http.createServer(async (req, res) => {
     res.end(body);
   };
   try {
+    const gh = await handleGithub(req, url, {
+      appOrigin: APP,
+      loadReport,
+      view,
+      readBody,
+      secure: !/^(localhost|127\.0\.0\.1)(:|$)/.test(String(req.headers.host || '')),
+    });
+    if (gh) return send(gh.status, gh.type, gh.body, gh.headers);
     if (url.pathname === '/og.svg' || url.pathname === '/og.png') {
       const cardOpts = {
         app: 'AGENTSCORE',
@@ -400,7 +429,7 @@ Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking. A sc
         return send(200, 'text/html; charset=utf-8', view({
           title: `Fix report ${report.host || ''}`.trim(),
           description: `Before ${kit.before.score}/100. After ${kit.after.score}/100.`,
-          body: reportBody(report, APP),
+          body: reportBody(report, APP, { github: githubFixEnabled() }),
         }));
       }
       const attachment = (filename) => ({ 'content-disposition': `attachment; filename="${filename}"` });
