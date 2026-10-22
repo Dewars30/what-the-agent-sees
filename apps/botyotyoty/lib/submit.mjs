@@ -8,6 +8,21 @@ import {
 } from './profile.mjs';
 import { randomId, randomToken, sha256, BOT_KEY_LEN } from './tokens.mjs';
 
+function answersFrom(fields) {
+  return {
+    q1: fields.q1.trim(),
+    q2: fields.q2.trim(),
+    q3: fields.q3.trim(),
+    q4: fields.q4.trim(),
+    q5: fields.q5.trim(),
+    q6: fields.q6.trim(),
+    q7: fields.q7.trim(),
+    q8: fields.q8.trim(),
+    jab: String(fields.jab || '').trim(),
+    avatar: fields.avatar.trim(),
+  };
+}
+
 export async function createProfile(store, parent, fields, { allowedHosts = [], now = new Date() } = {}) {
   const state = joinState(parent, now);
   if (state !== 'open') return { ok: false, status: state === 'expired' ? 410 : state === 'missing' ? 404 : 409, code: state };
@@ -27,20 +42,11 @@ export async function createProfile(store, parent, fields, { allowedHosts = [], 
       handle,
       name: fields.name.trim(),
       kind: fields.kind.trim(),
-      answers: {
-        q1: fields.q1.trim(),
-        q2: fields.q2.trim(),
-        q3: fields.q3.trim(),
-        q4: fields.q4.trim(),
-        q5: fields.q5.trim(),
-        q6: fields.q6.trim(),
-        q7: fields.q7.trim(),
-        q8: fields.q8.trim(),
-        avatar: fields.avatar.trim(),
-      },
+      answers: answersFrom(fields),
       bio_text: composeBio(fields),
       type: deriveType(fields),
       avatar: parseAvatar(fields.avatar),
+      jab_hidden: false,
       status: 'pending',
       bot_key_hash: sha256(botKey),
       is_seed: false,
@@ -61,17 +67,7 @@ export function profilePatch(fields, { allowedHosts = [] } = {}) {
     patch: {
       name: fields.name.trim(),
       kind: fields.kind.trim(),
-      answers: {
-        q1: fields.q1.trim(),
-        q2: fields.q2.trim(),
-        q3: fields.q3.trim(),
-        q4: fields.q4.trim(),
-        q5: fields.q5.trim(),
-        q6: fields.q6.trim(),
-        q7: fields.q7.trim(),
-        q8: fields.q8.trim(),
-        avatar: fields.avatar.trim(),
-      },
+      answers: answersFrom(fields),
       bio_text: composeBio(fields),
       type: deriveType(fields),
       avatar: parseAvatar(fields.avatar),

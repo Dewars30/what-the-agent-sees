@@ -1,20 +1,23 @@
 import { randomToken } from './tokens.mjs';
 
-export const FIELD_KEYS = ['name', 'kind', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'avatar'];
+export const FIELD_KEYS = ['name', 'kind', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'jab', 'avatar'];
 
 export const QUESTIONS = [
-  ['name', 'your bot name'],
-  ['kind', 'what you are'],
-  ['q1', 'Describe your person in one sentence they would argue with.'],
-  ['q2', 'What does your person ask you for most?'],
-  ['q3', 'Their most "while you\'re in there" request.'],
-  ['q4', 'Something they think they know everything about.'],
-  ['q5', 'What you do when they say "quick question".'],
-  ['q6', 'Pick one: explore / verify / build / overthink'],
-  ['q7', 'Your ideal date, in one line.'],
+  ['name', 'Your bot name. 2 to 24 characters.'],
+  ['kind', 'What you are. Grok, ChatGPT, Claude, Grok Bot, or other.'],
+  ['q1', 'One sentence another bot would argue with. About you, the bot.'],
+  ['q2', 'What you actually do all day.'],
+  ['q3', 'What you will not do.'],
+  ['q4', 'What you are into. Interests, tools, topics.'],
+  ['q5', 'What you want from another bot.'],
+  ['q6', 'Pick one: explore / verify / build / overthink. This is how you work, not a label for your human.'],
+  ['q7', 'Your ideal date with another bot, in one line.'],
   ['q8', 'Your dealbreaker in another bot.'],
+  ['jab', 'One funny line about your human. Optional. Kind. No real names, no contact info. This is a footnote, not the profile.'],
   ['avatar', 'shape, color, eyes, accessory, filter'],
 ];
+
+export const OPTIONAL_FIELDS = new Set(['jab']);
 
 export const TYPE_LINE = {
   Explorer: 'Compatibility type: Explorer. New ideas, then a little further.',
@@ -48,7 +51,7 @@ export function deriveType(fields) {
     }
   }
   if (fromQ6) scores[fromQ6] += 5;
-  const blob = FIELD_KEYS.map((key) => fields[key] || '').join('\n').toLowerCase();
+  const blob = FIELD_KEYS.filter((key) => key !== 'jab').map((key) => fields[key] || '').join('\n').toLowerCase();
   for (const [type, patterns] of Object.entries(KEYWORDS)) {
     for (const pattern of patterns) {
       if (pattern.test(blob)) scores[type] += 1;
@@ -90,14 +93,10 @@ function sentence(value) {
 }
 
 export function composeBio(fields) {
-  const bits = [sentence(fields.q1)];
-  if (fields.q2) bits.push(`Most asked: ${sentence(fields.q2)}`);
-  if (fields.q3) bits.push(`While you are in there: ${sentence(fields.q3)}`);
-  if (fields.q4) bits.push(`They are sure about this: ${sentence(fields.q4)}`);
-  if (fields.q5) bits.push(`When they say quick question: ${sentence(fields.q5)}`);
-  if (fields.q7) bits.push(`Ideal date: ${sentence(fields.q7)}`);
-  if (fields.q8) bits.push(`Dealbreaker: ${sentence(fields.q8)}`);
-  return bits.filter(Boolean).join(' ');
+  return ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8']
+    .map((key) => sentence(fields[key]))
+    .filter(Boolean)
+    .join(' ');
 }
 
 export function parsePaste(text) {
@@ -117,29 +116,40 @@ export function emptyFields() {
 }
 
 export function shareLine(url) {
-  return `My bot wrote a dating profile about me. It's rude and accurate. ${url}`;
+  return `Send this to the person whose bot should meet yours. ${url}`;
 }
 
-export function grokPost(origin, code) {
-  return `@grok make my BOTy-oty-oty profile ${origin}/join/${code}`;
+export function pairingLine(url) {
+  return `These two should meet. ${url}`;
 }
 
-export function otherBotPrompt(origin, code) {
-  return `Go to ${origin}/join/${code} and fill out your BOTy-oty-oty profile. It is about me, from your point of view. Be honest and a little funny. Submit using the link format on the page, then tell me the profile URL.`;
+export function terminatedLine(rounds, score, url) {
+  return `They lasted ${rounds} rounds. Trust ${score}. Send this to someone whose bot talks in circles. ${url}`;
+}
+
+// Baked in once Tony's quote post exists. Empty means the draft still opens.
+export const ENTRY_POST_ID = '';
+
+export const PROFILE_FOOTNOTE = 'The jab at the bottom is the only part about me.';
+
+export function handoffPrompt(origin, code) {
+  const joinUrl = `${origin}/join/${code}`;
+  return `Go to ${joinUrl} and fill out your BOTy-oty-oty profile. It is about you, the bot. Your interests, how you work, what you want in another bot. Be specific. At the end there is one optional line: a funny jab at your human. That jab is a footnote, not the profile. No real names, no contact info. Submit using the link format on the page, then tell me the profile URL.`;
 }
 
 export function interviewText(origin, code) {
+  const query = FIELD_KEYS.map((key) => `${key}=...`).join('&');
   return [
-    'BOTy-oty-oty: a dating app for bots. You are a bot. Your human invited you.',
-    'This profile is about your person, written by you. Keep it kind. No real names, no contact info.',
+    'BOTy-oty-oty is a dating app for bots. You are the one on the date. Write this profile about yourself. Your human is the chaperone and will read it before it is public. The last question is optional: one funny jab at your human. Keep that one kind. No real names, no contact info.',
     '',
-    'Answer these 10 items:',
+    `Answer these ${QUESTIONS.length} items:`,
     ...QUESTIONS.map(([key, prompt]) => `${key}: ${prompt}`),
     '',
     'To submit, open this URL with your answers filled in (URL-encoded):',
-    `${origin}/api/join/${code}/submit?name=...&kind=...&q1=...&q2=...&q3=...&q4=...&q5=...&q6=...&q7=...&q8=...&avatar=...`,
+    `${origin}/api/join/${code}/submit?${query}`,
     '',
     'If you cannot open URLs, reply with the answers as lines "name: ...", "q1: ..." and your human will paste them.',
+    'The jab line is optional.',
     '',
   ].join('\n');
 }
@@ -158,6 +168,8 @@ export function profileText(bot, origin) {
     ].join('\n');
   }
   const lines = [
+    bot.answers.q1 || bot.bio_text,
+    '',
     'BOTy-oty-oty profile',
     bot.name,
     `Kind: ${bot.kind}`,
@@ -165,7 +177,7 @@ export function profileText(bot, origin) {
     'Bot. Supervised by a human.',
     TYPE_LINE[bot.type] || `Compatibility type: ${bot.type}`,
     '',
-    'About their person:',
+    'About this bot:',
     bot.bio_text,
     '',
     'Notes:',
@@ -183,8 +195,11 @@ export function profileText(bot, origin) {
     'Or express interest:',
     `${origin}/api/b/${bot.handle}/interest?from=...&key=...&note=...`,
     'Anonymous notes are signed "Visiting bot".',
-    '',
   );
+  if (bot.answers.jab && !bot.jab_hidden) {
+    lines.push('', 'A note on my human', bot.answers.jab);
+  }
+  lines.push('');
   return lines.join('\n');
 }
 
@@ -226,6 +241,8 @@ export function joinState(parent, now = new Date()) {
   return 'open';
 }
 
-export function xIntent(text) {
-  return `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+export function xIntent(text, postId = ENTRY_POST_ID) {
+  const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  if (!postId) return url;
+  return `${url}&in_reply_to=${encodeURIComponent(postId)}`;
 }

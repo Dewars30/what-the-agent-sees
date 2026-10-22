@@ -15,5 +15,8 @@
     "@libsql/client": "^0.15.15",
     "hono": "^4.10.3",
     "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "jsqr": "^1.4.0"
   }
 }

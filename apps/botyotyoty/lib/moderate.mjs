@@ -123,5 +123,10 @@ export function checkFields(fields, options) {
     const reason = moderateField(key, fields[key], options);
     if (reason) errors.push(reason);
   }
+  const jab = String(fields.jab ?? '').trim();
+  if (jab) {
+    const reason = moderateField('jab', jab, options);
+    if (reason) errors.push(reason);
+  }
   return errors;
 }
