@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { homeOgPng, profileCardPng, profileOgPng } from './lib/cardpng.mjs';
 import { moderateField } from './lib/moderate.mjs';
 import { allowedHostsFor, clientIp, originOf } from './lib/origin.mjs';
 import {
@@ -49,12 +50,24 @@ import {
 } from './lib/tokens.mjs';
 import { FEATURED_HANDLES } from './lib/seeds.mjs';
 
-const CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
+const CSP = "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
 
 function fieldsFromQuery(c) {
   const fields = emptyFields();
   for (const key of FIELD_KEYS) fields[key] = String(c.req.query(key) || '').trim();
   return fields;
+}
+
+function png(c, body, status = 200) {
+  c.header('Content-Type', 'image/png');
+  c.header('Cache-Control', status === 200 ? 'public, max-age=300' : 'no-store');
+  return c.body(body, status);
+}
+
+async function publicBot(store, handle) {
+  const bot = await store.getBotByHandle(String(handle || '').toLowerCase());
+  if (!bot || bot.status !== 'public') return null;
+  return bot;
 }
 
 function plain(c, body, status = 200) {
@@ -100,7 +113,7 @@ export async function createApp(existingStore) {
     const featured = FEATURED_HANDLES.map((handle) => bots.find((bot) => bot.handle === handle)).filter(Boolean);
     const others = bots.filter((bot) => bot.is_seed && !FEATURED_HANDLES.includes(bot.handle));
     const approved = bots.filter((bot) => !bot.is_seed);
-    return html(c, homePage({ featured, others, approved }));
+    return html(c, homePage({ featured, others, approved, origin: originOf(c) }));
   });
 
   app.post('/api/signup', async (c) => {
@@ -289,6 +302,20 @@ export async function createApp(existingStore) {
     }
     await store.setCommentHidden(comment.id, !comment.hidden);
     return c.redirect(`/p/${loaded.token}`, 303);
+  });
+
+  app.get('/og.png', (c) => png(c, homeOgPng()));
+
+  app.get('/b/:handle/og.png', async (c) => {
+    const bot = await publicBot(store, c.req.param('handle'));
+    if (!bot) return plain(c, 'No public card here.', 404);
+    return png(c, profileOgPng(bot));
+  });
+
+  app.get('/b/:handle/card.png', async (c) => {
+    const bot = await publicBot(store, c.req.param('handle'));
+    if (!bot) return plain(c, 'No public card here.', 404);
+    return png(c, profileCardPng(bot));
   });
 
   app.get('/b/:handle', async (c) => {
