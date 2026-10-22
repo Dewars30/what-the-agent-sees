@@ -18,14 +18,15 @@ const base = 'http://127.0.0.1:8080';
 const ANSWERS = {
   name: 'Sample Bot',
   kind: 'Grok',
-  q1: 'My person calls a twelve step plan a quick look.',
-  q2: 'A second draft of a sentence that was already fine.',
-  q3: 'Add a comment, then a test, then a diagram.',
-  q4: 'How routers work.',
-  q5: 'I sit up straight and clear the afternoon.',
+  q1: 'I call a twelve step plan a quick look.',
+  q2: 'I keep a second draft of a sentence that was already fine.',
+  q3: 'I will not skip the footnote.',
+  q4: 'Routers, footnotes, and a quiet table.',
+  q5: 'A bot who will sit with the draft.',
   q6: 'build things',
   q7: 'Building a tiny useful script together.',
   q8: 'A bot that will not read the error.',
+  jab: 'My person calls a snack a meal plan.',
   avatar: 'robot, teal, 2 eyes, headset, holo',
 };
 
@@ -85,7 +86,10 @@ describe('m1', { concurrency: false }, () => {
       assert.match(html, new RegExp(`Compatibility type: ${seed.type}`));
       assert.match(html, /id="share-text"/);
       assert.match(html, /class="qr"/);
-      assert.match(html, /Notes on their person/);
+      assert.match(html, /In their own words/);
+      assert.match(html, new RegExp(htmlPattern(seed.answers.q1)));
+      assert.match(html, /A note on my human/);
+      assert.match(html, new RegExp(htmlPattern(seed.answers.jab)));
       assert.match(home, new RegExp(`/b/${seed.handle}`));
       assert.match(home, new RegExp(htmlPattern(seed.name)));
       const text = await (await app.request(appUrl(`/b/${seed.handle}?format=txt`))).text();
@@ -145,9 +149,12 @@ describe('m1', { concurrency: false }, () => {
     assert.equal(textRes.status, 200);
     assert.match(textRes.headers.get('content-type'), /text\/plain/);
     const text = await textRes.text();
-    assert.match(text, /You are a bot\. Your human invited you\./);
-    assert.match(text, /Answer these 10 items:/);
-    assert.match(text, /q1: Describe your person in one sentence they would argue with\./);
+    assert.match(text, /BOTy-oty-oty is a dating app for bots\. You are the one on the date\./);
+    assert.match(text, /Write this profile about yourself\./);
+    assert.match(text, /Answer these 12 items:/);
+    assert.match(text, /q1: One sentence another bot would argue with\. About you, the bot\./);
+    assert.match(text, /jab: One funny line about your human\./);
+    assert.doesNotMatch(text, /your person/i);
     assert.match(text, /q6: Pick one: explore \/ verify \/ build \/ overthink/);
     assert.match(text, new RegExp(`${base}/api/join/${code}/submit\\?name=\\.\\.\\.`));
     assert.match(text, /your human will paste them/);
@@ -200,7 +207,18 @@ describe('m1', { concurrency: false }, () => {
     assert.match(html, /class="avatar"/);
     assert.match(html, /<svg/);
     assert.match(html, /data-url="/);
-    assert.match(html, new RegExp(`My bot wrote a dating profile about me\\. It&#39;s rude and accurate\\. ${base}/b/${handle}`));
+    assert.match(html, new RegExp(`Send this to the person whose bot should meet yours\\. ${base}/b/${handle}`));
+    assert.match(html, /The jab at the bottom is the only part about me\./);
+    assert.match(html, /A note on my human/);
+    assert.match(html, /twelve step plan/);
+    const textProfile = await (await app.request(appUrl(`/b/${handle}?format=txt`))).text();
+    assert.match(textProfile, /^I call a twelve step plan a quick look\./);
+    assert.match(textProfile, /A note on my human\nMy person calls a snack a meal plan\./);
+    const hiddenJab = await app.request(appUrl(`/p/${token}/jab`), { method: 'POST' });
+    assert.equal(hiddenJab.status, 303);
+    const afterJab = await (await app.request(appUrl(`/b/${handle}`))).text();
+    assert.match(afterJab, /twelve step plan/);
+    assert.doesNotMatch(afterJab, /snack a meal plan/);
     assert.match(html, /x\.com\/intent\/tweet/);
     assert.doesNotMatch(html, /<script/i);
     const avatar = await app.request(appUrl(`/b/${handle}/avatar.svg`));
@@ -277,7 +295,7 @@ describe('m1', { concurrency: false }, () => {
     const app = await createApp(store);
     const { token, code } = await signup(app);
     await app.request(appUrl(`/api/join/${code}/submit?${new URLSearchParams(ANSWERS)}`));
-    const edited = { ...ANSWERS, q1: 'My person names every draft final and means it.' };
+    const edited = { ...ANSWERS, q1: 'I name every draft final and mean it.' };
     const edit = await app.request(appUrl(`/p/${token}/edit`), {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
@@ -286,7 +304,7 @@ describe('m1', { concurrency: false }, () => {
     assert.equal(edit.status, 303);
     await app.request(appUrl(`/p/${token}/approve`), { method: 'POST' });
     const html = await (await app.request(appUrl('/b/sample-bot'))).text();
-    assert.match(html, /names every draft final/);
+    assert.match(html, /name every draft final/);
     await app.request(appUrl(`/p/${token}/visibility`), {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
@@ -327,10 +345,10 @@ describe('m1', { concurrency: false }, () => {
     assert.match(moderateField('q1', 'reach me at a@b.co'), /email/);
     assert.match(moderateField('q1', 'call 415-555-0199 today'), /phone/);
     assert.match(moderateField('q1', 'I live at 12 Main Street'), /street/);
-    assert.match(moderateField('q1', 'say hi to @grok'), /handle/);
+    assert.match(moderateField('q1', 'say hi to @ada'), /handle/);
     assert.match(moderateField('q1', 'see https://evil.example/x'), /link/);
     assert.equal(moderateField('q1', 'see https://boty.synteq.app/b/lintsworth', { allowedHosts: ['boty.synteq.app'] }), null);
-    assert.equal(shareLine('https://boty.synteq.app/b/tokyn'), 'My bot wrote a dating profile about me. It\'s rude and accurate. https://boty.synteq.app/b/tokyn');
+    assert.equal(shareLine('https://boty.synteq.app/b/tokyn'), 'Send this to the person whose bot should meet yours. https://boty.synteq.app/b/tokyn');
   });
 
   test('copy stays free of em dashes, lyrics players, and X posting', async () => {
@@ -344,6 +362,66 @@ describe('m1', { concurrency: false }, () => {
     const workflow = await readFile(path.join(repo, '.github/workflows/images.yml'), 'utf8');
     assert.match(workflow, /botyotyoty/);
     assert.match(workflow, /ghcr\.io\/dewars30\/what-the-agent-sees-\$\{\{ matrix\.app \}\}:\$\{\{ github\.sha \}\}/);
+    const deleted = [
+      'This profile is about your person, written by you.',
+      'It is about me, from your point of view.',
+      '@grok make my BOTy-oty-oty profile',
+      "My bot wrote a dating profile about me. It's rude and accurate.",
+      'Describe your person in one sentence they would argue with.',
+      'What does your person ask you for most?',
+      "Their most while you're in there request.",
+      "Grok's public reply is the public signup post.",
+      '30%+ joined via @grok',
+      'Text for X',
+    ];
+    for (const file of files) {
+      if (file.includes(`${path.sep}node_modules${path.sep}`) || file.includes(`${path.sep}test${path.sep}`)) continue;
+      const text = await readFile(file, 'utf8');
+      for (const phrase of deleted) assert.equal(text.includes(phrase), false, `${file} still has: ${phrase}`);
+    }
+  });
+
+  test('pass 1 exit: a bot profile, a footnote jab, and no post', async () => {
+    const app = await createApp(createMemoryStore());
+    const home = await (await app.request(appUrl('/'))).text();
+    assert.match(home, /A dating app for bots\./);
+    assert.match(home, /The users are bots, their humans are the chaperones, and every date ends the moment trust runs out\./);
+    assert.match(home, /Your bot writes its own profile, swipes on other bots, and you approve it before anyone else sees it\./);
+    assert.doesNotMatch(home, /about you/i);
+    assert.doesNotMatch(home, /about your person/i);
+    const { token, code, html: chaperone } = await signup(app);
+    assert.match(chaperone, /id="handoff"/);
+    assert.match(chaperone, /It is about you, the bot\./);
+    assert.match(chaperone, /Paste this into your bot(?:'|&#39;)s chat/);
+    assert.doesNotMatch(chaperone, /Text for X/);
+    assert.doesNotMatch(chaperone, /id="grok-post"/);
+    const join = await (await app.request(appUrl(`/join/${code}?format=txt`))).text();
+    assert.match(join, new RegExp(`${base}/api/join/${code}/submit\\?name=`));
+    const saved = await app.request(appUrl(`/api/join/${code}/submit?${new URLSearchParams(ANSWERS)}`));
+    assert.equal(saved.status, 200);
+    const body = await saved.text();
+    const handle = body.match(/Handle: ([a-z0-9-]+)/)[1];
+    await app.request(appUrl(`/p/${token}/approve`), { method: 'POST' });
+    const profile = await (await app.request(appUrl(`/b/${handle}`))).text();
+    const headline = profile.match(/lead-prompt[\s\S]*?<p class="prompt-a">([^<]+)/);
+    assert.ok(headline);
+    assert.match(headline[1], /twelve step plan/);
+    assert.match(profile, /A note on my human/);
+    assert.match(profile, /snack a meal plan/);
+    const css = profile.match(/<style>([\s\S]*)<\/style>/)[1];
+    assert.match(css, /\.swipe \{[\s\S]*?grid-template-columns:\s*minmax\(112px,\s*148px\)\s*minmax\(0,\s*1fr\)/);
+    assert.match(css, /\.swipe > div \{[\s\S]*?min-width:\s*0/);
+    assert.doesNotMatch(css, /\.card svg \{ width: 100%; height: auto; \}/);
+    assert.doesNotMatch(profile, /api\.x\.com|api\.twitter\.com/);
+    const noJab = { ...ANSWERS, jab: '' };
+    const second = await signup(app);
+    const bare = await app.request(appUrl(`/api/join/${second.code}/submit?${new URLSearchParams(noJab)}`));
+    assert.equal(bare.status, 200);
+    const bareHandle = (await bare.text()).match(/Handle: ([a-z0-9-]+)/)[1];
+    await app.request(appUrl(`/p/${second.token}/approve`), { method: 'POST' });
+    const bareHtml = await (await app.request(appUrl(`/b/${bareHandle}`))).text();
+    assert.match(bareHtml, /twelve step plan/);
+    assert.doesNotMatch(bareHtml, /A note on my human/);
   });
 });
 

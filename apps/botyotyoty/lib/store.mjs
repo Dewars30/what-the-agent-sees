@@ -7,6 +7,7 @@ function cloneBot(row) {
     answers: { ...row.answers },
     avatar: { ...row.avatar },
     is_seed: Boolean(row.is_seed),
+    jab_hidden: Boolean(row.jab_hidden),
     parent_id: row.parent_id ?? null,
     bot_key_hash: row.bot_key_hash ?? null,
   };
@@ -39,9 +40,9 @@ export function createMemoryStore() {
     async migrate() {},
     async ensureSeeds() {
       for (const [index, seed] of SEEDS.entries()) {
-        if (botByHandle.has(seed.handle)) continue;
-        await api.insertBot({
-          id: `seed-${seed.handle}`,
+        const existing = botByHandle.get(seed.handle);
+        const seedRow = {
+          id: existing?.id || `seed-${seed.handle}`,
           parent_id: null,
           handle: seed.handle,
           name: seed.name,
@@ -53,8 +54,21 @@ export function createMemoryStore() {
           status: 'public',
           bot_key_hash: null,
           is_seed: true,
-          created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, index)).toISOString(),
-        });
+          jab_hidden: false,
+          created_at: existing?.created_at || new Date(Date.UTC(2026, 0, 1, 0, 0, index)).toISOString(),
+        };
+        if (!existing) await api.insertBot(seedRow);
+        else if (existing.is_seed) {
+          await api.updateBot(existing.id, {
+            name: seed.name,
+            kind: seed.kind,
+            answers: seed.answers,
+            bio_text: seed.bio_text,
+            type: seed.type,
+            avatar: seed.avatar,
+            jab_hidden: false,
+          });
+        }
       }
     },
     async createParent(row) {
@@ -145,6 +159,7 @@ export function createMemoryStore() {
       if (patch.avatar !== undefined) row.avatar = { ...patch.avatar };
       if (patch.status !== undefined) row.status = patch.status;
       if (patch.bot_key_hash !== undefined) row.bot_key_hash = patch.bot_key_hash;
+      if (patch.jab_hidden !== undefined) row.jab_hidden = Boolean(patch.jab_hidden);
       return cloneBot(row);
     },
     async deleteBot(id) {
@@ -229,6 +244,7 @@ function botOut(row) {
     status: String(row.status),
     bot_key_hash: row.bot_key_hash == null ? null : String(row.bot_key_hash),
     is_seed: Number(row.is_seed) === 1,
+    jab_hidden: Number(row.jab_hidden) === 1,
     created_at: String(row.created_at),
   };
 }
@@ -270,6 +286,7 @@ export function createLibsqlStore(client) {
           status TEXT NOT NULL,
           bot_key_hash TEXT,
           is_seed INTEGER NOT NULL DEFAULT 0,
+          jab_hidden INTEGER NOT NULL DEFAULT 0,
           created_at TEXT NOT NULL
         )`,
         `CREATE INDEX IF NOT EXISTS bots_key ON bots(bot_key_hash)`,
@@ -292,10 +309,27 @@ export function createLibsqlStore(client) {
         )`,
         `CREATE INDEX IF NOT EXISTS interest_to ON interest(to_bot_id)`,
       ], 'write');
+      const info = await client.execute('PRAGMA table_info(bots)');
+      const names = new Set(info.rows.map((row) => row.name));
+      if (!names.has('jab_hidden')) {
+        await client.execute('ALTER TABLE bots ADD COLUMN jab_hidden INTEGER NOT NULL DEFAULT 0');
+      }
     },
     async ensureSeeds() {
       for (const [index, seed] of SEEDS.entries()) {
-        const existing = await one(client, 'SELECT handle FROM bots WHERE handle = ?', [seed.handle]);
+        const existing = await this.getBotByHandle(seed.handle);
+        if (existing && existing.is_seed) {
+          await this.updateBot(existing.id, {
+            name: seed.name,
+            kind: seed.kind,
+            answers: seed.answers,
+            bio_text: seed.bio_text,
+            type: seed.type,
+            avatar: seed.avatar,
+            jab_hidden: false,
+          });
+          continue;
+        }
         if (existing) continue;
         try {
           await this.insertBot({
@@ -422,11 +456,12 @@ export function createLibsqlStore(client) {
         ['type', 'type'],
         ['status', 'status'],
         ['bot_key_hash', 'bot_key_hash'],
+        ['jab_hidden', 'jab_hidden'],
       ];
       for (const [key, column] of mapping) {
         if (patch[key] !== undefined) {
           sets.push(`${column} = ?`);
-          args.push(patch[key]);
+          args.push(key === 'jab_hidden' ? (patch[key] ? 1 : 0) : patch[key]);
         }
       }
       if (patch.answers !== undefined) {

@@ -253,6 +253,13 @@ export async function createApp(existingStore) {
     return c.redirect(`/p/${loaded.token}`, 303);
   });
 
+  app.post('/p/:token/jab', async (c) => {
+    const loaded = await loadParent(c);
+    if (!loaded || !loaded.bot) return html(c, messagePage({ title: 'No profile', statusText: 'There is no jab to hide until a profile exists.' }), 404, { noindex: true });
+    await store.updateBot(loaded.bot.id, { jab_hidden: !loaded.bot.jab_hidden });
+    return c.redirect(`/p/${loaded.token}`, 303);
+  });
+
   app.post('/p/:token/approve', async (c) => {
     const loaded = await loadParent(c);
     if (!loaded || !loaded.bot) return html(c, messagePage({ title: 'Nothing to approve', statusText: 'No profile is waiting on this page.' }), 404, { noindex: true });
