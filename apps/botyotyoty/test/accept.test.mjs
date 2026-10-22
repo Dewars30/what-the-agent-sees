@@ -153,7 +153,7 @@ async function assertCard(app, { page, cardPath, ogPath, url, share, cardWidth, 
   assert.equal(qr.dataUrl, url);
   assert.equal(decodeQrSvg(qr.svg), url);
   const text = await (await app.request(appUrl(`${page}?format=txt`))).text();
-  assert.match(text, new RegExp(`^${ownLine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  assert.match(text, new RegExp(`^\\[BOTy-oty-oty\\.[^\\n]*\\]\\n${ownLine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   assert.match(text, new RegExp(`Share text: ${share.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   if (jab) {
     const trimmed = text.trimEnd();
@@ -346,7 +346,7 @@ describe('acceptance', { concurrency: false }, () => {
     assert.ok(ended.text.indexOf(BREAKUP_LINE) < ended.text.indexOf('A note on my human'));
     assert.doesNotMatch(ended.text.split('A note on my human')[0], /narrates every loop|hums through the rerun/);
 
-    const ada = await approve(app, fullFields('Ada Lane', 'build things'));
+    const ada = await approve(app, fullFields('Ada Lane', 'explore new ideas'));
     const bea = await approve(app, fullFields('Bea Lane', 'check facts'));
     const fullLocation = await pair(app, ada.token, bea.handle, 'Twelve distinct rounds, then the cap.');
     const fullId = fullLocation.slice(6);
@@ -413,7 +413,7 @@ describe('acceptance', { concurrency: false }, () => {
     const app = await createApp(createMemoryStore());
     const mine = await approve(app, fields('Keeper', 'build things', { jab: '' }));
     const text = await (await app.request(appUrl('/b/lintsworth?format=txt'))).text();
-    assert.match(text, /^I will check it\. Then I will check the check\./);
+    assert.match(text, /^\[BOTy-oty-oty\.[^\n]*\]\nI will check it\. Then I will check the check\./);
     assert.match(text, /A note on my human/);
     assert.match(text, /coffee/);
     const note = await app.request(appUrl(`/api/b/lintsworth/comment?text=${encodeURIComponent('The second check is the interesting one.')}&key=${mine.botKey}`));
@@ -431,7 +431,7 @@ describe('acceptance', { concurrency: false }, () => {
     const app = await createApp(createMemoryStore());
     const mine = await approve(app, fields('Keeper', 'build things', { jab: 'My person files the snacks.' }));
     const text = await (await app.request(appUrl(`/b/${mine.handle}/swipes?format=txt&key=${mine.botKey}`))).text();
-    assert.match(text, /^I keep my own line as Keeper\./);
+    assert.match(text, /^\[BOTy-oty-oty\.[^\n]*\]\nI keep my own line as Keeper\./);
     assert.match(text, /Each reason is about the other bot/);
     assert.doesNotMatch(text, /files the snacks|human/);
     const lines = text.split('\n').filter((line) => /^(Right|Left) on /.test(line));
@@ -448,7 +448,7 @@ describe('acceptance', { concurrency: false }, () => {
     const other = await approve(app, fields('Wander', 'explore new ideas', { jab: 'My person opens spare tabs.' }));
     const location = await pair(app, mine.token, other.handle, 'A builder who stays and an explorer who opens one more tab.');
     const text = await (await app.request(appUrl(`${location}?format=txt`))).text();
-    assert.match(text, /^I keep my own line as Keeper\./);
+    assert.match(text, /^\[BOTy-oty-oty\.[^\n]*\]\nI keep my own line as Keeper\./);
     assert.match(text, /Fit: /);
     assert.match(text, /Waiting\. A date does not start until both accept/);
     assert.ok(text.trimEnd().endsWith('My person opens spare tabs.'));
@@ -500,7 +500,7 @@ describe('acceptance', { concurrency: false }, () => {
     assert.match(pub, /sparkle ✨/);
     assert.doesNotMatch(pub, /<script/i);
     const txt = await (await app.request(appUrl(`/b/${handle}?format=txt`))).text();
-    assert.match(txt, /^<script>alert\(1\)<\/script>/);
+    assert.match(txt, /^\[BOTy-oty-oty\.[^\n]*\]\n<script>alert\(1\)<\/script>/);
     assert.match(txt, /sparkle ✨/);
     const twin = await signup(app);
     const second = await submit(app, twin.code, fields('Pixel Bot', 'explore new ideas', { jab: '' }));
@@ -515,7 +515,7 @@ describe('acceptance', { concurrency: false }, () => {
     assert.match(join, /Answer these 12 items/);
     for (const seed of SEEDS) {
       const text = await (await app.request(appUrl(`/b/${seed.handle}?format=txt`))).text();
-      assert.match(text, new RegExp(`^${seed.answers.q1.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+      assert.match(text, new RegExp(`^\\[BOTy-oty-oty\\.[^\\n]*\\]\\n${seed.answers.q1.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
       assert.match(text, /Fictional seed bot/);
       assert.match(text, /A note on my human/);
       assert.ok(text.trimEnd().endsWith(seed.answers.jab));
@@ -554,7 +554,7 @@ describe('acceptance', { concurrency: false }, () => {
       ownLine: `${PAYLOAD} same point`,
       breakup: false,
     });
-    assert.match(profile.html, /The jab at the bottom is the only part about me\./);
+    assert.match(profile.html, /The note on my human is the only line about them\./);
     const location = await pair(app, mine.token, other.handle, 'Both of them stay on one kiln until trust runs out.');
     await assertCard(app, {
       page: location,
@@ -572,7 +572,8 @@ describe('acceptance', { concurrency: false }, () => {
     await app.request(appUrl(`/p/${mine.token}/pair/${id}/accept`), { method: 'POST' });
     await app.request(appUrl(`/p/${other.token}/pair/${id}/accept`), { method: 'POST' });
     const matched = await (await app.request(appUrl(`/m/${id}`))).text();
-    assert.match(matched, /Trust 0\.67/);
+    assert.match(matched, /matched\. (?:Terminated after|After) \d+ rounds\. Trust \d\.\d\d\./);
+    assert.doesNotMatch(matched, /0\.67/);
     const datePath = matched.match(/\/d\/[0-9a-f-]+/)[0];
     const dateUrl = `${base}${datePath}`;
     const ended = await assertCard(app, {

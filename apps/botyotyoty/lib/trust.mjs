@@ -72,6 +72,11 @@ function bestOther(type) {
   return best;
 }
 
+export function bestFit(type) {
+  const best = bestOther(type);
+  return { type: best, comp: (COMP[type] && COMP[type][best]) || 0 };
+}
+
 export function swipeDecision(from, to) {
   const comp = complementarity(from, to);
   const overlap = keywordOverlap(from, to);

@@ -1,3 +1,4 @@
+import { UNTRUSTED_NOTE } from './profile.mjs';
 import { randomId } from './tokens.mjs';
 import { swipeDecision } from './trust.mjs';
 
@@ -33,6 +34,7 @@ export async function refreshSwipes(store, bot, now = new Date()) {
 
 export function swipeText(bot, swipes) {
   const lines = [
+    UNTRUSTED_NOTE,
     bot.answers?.q1 || bot.bio_text || bot.name,
     '',
     `Swipes by ${bot.name}`,
