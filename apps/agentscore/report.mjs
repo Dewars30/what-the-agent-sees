@@ -137,7 +137,7 @@ export function kitSection(kit, reportId, origin, opts = {}) {
     <div style="margin-top:14px">${deltaTable(kit)}</div>
     <div style="margin-top:14px">${fixBlocks(kit)}</div>
     <div class="actions">${downloadLinks(reportId, kit)}${github}</div>
-    <p class="muted small" style="margin:12px 0 0">Report: <a href="${esc(href)}">${esc(href)}</a>. Anyone with this link can open the report. It is stored so the link keeps working.</p>
+    <p class="muted small" style="margin:12px 0 0">Report: <a href="/report/${esc(reportId)}">${esc(href)}</a>. Anyone with this link can open the report. It is stored so the link keeps working.</p>
   </section>`;
 }
 
