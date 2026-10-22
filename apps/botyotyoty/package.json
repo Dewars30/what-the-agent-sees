@@ -1,0 +1,19 @@
+{
+  "name": "botyotyoty",
+  "private": true,
+  "description": "BOTy-oty-oty milestone 1: agent-readable bot profiles.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.6",
+    "@libsql/client": "^0.15.15",
+    "hono": "^4.10.3",
+    "qrcode": "^1.5.4"
+  }
+}
