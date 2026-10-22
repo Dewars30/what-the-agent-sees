@@ -1,13 +1,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { buildFix, countTags } from '../apps/agentscore/fix.mjs';
 import { extractModel } from '../apps/agentscore/core/extract.mjs';
 import { scorePage } from '../apps/agentscore/core/score.mjs';
-import { saveReport, loadReport, standaloneReport, fixesDiff } from '../apps/agentscore/report.mjs';
+import { packReport, unpackReport, standaloneReport, fixesDiff, kitSection } from '../apps/agentscore/report.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pageUrl = 'https://example.com/pricing-plans';
@@ -203,46 +202,80 @@ console.log('9. synteq snapshot: locator sees the same images the scorer sees');
   assert.equal(countTags(kit.patchedHtml, 'img'), 100);
   assert.ok(kit.after.score >= kit.before.score);
   assert.equal(DASH.test(JSON.stringify({ fixes: kit.fixes, notes: kit.notes, suggestions: kit.suggestions })), false);
+  const packed = packReport({ url: 'https://synteq.com/', host: 'synteq.com', createdAt: '2026-10-22T00:00:00.000Z', extras: { robots: { groups: 1 }, sitemap: true, llmsTxt: true, agents: { gptbot: 'partial' } }, kit });
+  assert.equal(packed.htmlIncluded, true);
+  assert.ok(packed.token.length < 400_000);
+  const round = unpackReport(packed.token);
+  assert.equal(round.after.score, kit.after.score);
+  assert.equal(round.patchedHtml, kit.patchedHtml);
+  assert.equal(round.patchedHtml.includes('originalHtml'), false);
 }
 
-console.log('10. report store round trip and standalone file');
+console.log('10. report round trip lives in the link, not on disk');
 {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentscore-reports-'));
-  const kit = buildFix(page('<main><h1>Plans</h1><img src="/a.png"></main>'), pageUrl, {});
-  const saved = saveReport({
+  const kit = buildFix(page('<main><h1>Plans</h1><img src="/a.png"></main>'), pageUrl, { robots: null, sitemap: false, llmsTxt: false, agents: {} });
+  const packed = packReport({
+    url: pageUrl,
+    host: 'example.com',
+    createdAt: '2026-10-22T00:00:00.000Z',
+    extras: { robots: null, sitemap: false, llmsTxt: false, agents: {} },
+    kit,
+  });
+  assert.equal(packed.htmlIncluded, true);
+  const loaded = unpackReport(packed.token);
+  assert.equal(loaded.after.score, kit.after.score);
+  assert.match(loaded.patchedHtml, /alt="Plans"/);
+  assert.equal(unpackReport('../etc/passwd'), null);
+  assert.equal(unpackReport('short'), null);
+  assert.equal(JSON.stringify(loaded).includes('gho_'), false);
+  const slim = packReport({
     url: pageUrl,
     host: 'example.com',
     createdAt: '2026-10-22T00:00:00.000Z',
     extras: {},
-    originalHtml: 'x',
+    kit: { ...kit, patchedHtml: '' },
+  });
+  assert.equal(slim.htmlIncluded, false);
+  assert.ok(packed.token.length > slim.token.length);
+  const dropped = packReport({
+    url: pageUrl,
+    host: 'example.com',
+    createdAt: '2026-10-22T00:00:00.000Z',
+    extras: {},
     kit,
-  }, dir);
-  assert.match(saved.id, /^[A-Za-z0-9_-]{8,32}$/);
-  const loaded = loadReport(saved.id, dir);
-  assert.equal(loaded.kit.after.score, kit.after.score);
-  assert.equal(loadReport('../etc/passwd', dir), null);
-  assert.equal(loadReport('short', dir), null);
-  const file = standaloneReport(loaded, 'https://agentscore.synteq.app');
+  }, { maxToken: slim.token.length });
+  assert.equal(dropped.htmlIncluded, false);
+  assert.equal(unpackReport(dropped.token).patchedHtml, undefined);
+  assert.throws(() => packReport({
+    url: pageUrl,
+    host: 'example.com',
+    createdAt: '2026-10-22T00:00:00.000Z',
+    extras: {},
+    kit: { ...kit, patchedHtml: '' },
+  }, { maxToken: slim.token.length - 1 }), /report link is too large/);
+  const file = standaloneReport(loaded);
   assert.match(file, /Before /);
   assert.match(file, /After /);
   assert.match(file, /Open the element/);
-  assert.match(file, /Anyone with this link can open the report/);
+  assert.match(file, /Nothing is stored on the server/);
   assert.doesNotMatch(file, /<link rel="stylesheet"/);
   assert.equal(DASH.test(file), false);
-  const diff = fixesDiff(kit);
+  const section = kitSection(packed, 'https://agentscore.synteq.app');
+  assert.match(section, /href="https:\/\/agentscore\.synteq\.app\/report#/);
+  assert.match(section, /deflate-raw/);
+  assert.doesNotMatch(section, /data\/reports/);
+  const diff = fixesDiff({ ...kit, url: pageUrl });
   assert.match(diff, /--- before/);
   assert.match(diff, /\+\+\+ after/);
-  assert.equal(DASH.test(diff), false);
-  assert.equal(JSON.stringify(saved).includes('gho_'), false);
+  assert.equal(DASH.test(diff + section), false);
 }
 
 console.log('11. report routes');
 
 function withServer(port, fn) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentscore-http-'));
   const proc = spawn(process.execPath, ['server.mjs'], {
     cwd: path.join(root, 'apps/agentscore'),
-    env: { ...process.env, PORT: String(port), AGENTSCORE_DATA_DIR: dir, GITHUB_FIX_ENABLED: '' },
+    env: { ...process.env, PORT: String(port), GITHUB_FIX_ENABLED: '' },
     stdio: 'ignore',
   });
   return (async () => {
@@ -256,43 +289,30 @@ function withServer(port, fn) {
         await new Promise((r) => setTimeout(r, 80));
       }
       assert.equal(up, true);
-      await fn(`http://127.0.0.1:${port}`, dir);
+      await fn(`http://127.0.0.1:${port}`);
     } finally {
       proc.kill('SIGTERM');
     }
   })();
 }
 
-await withServer(18921, async (base, dir) => {
-  const kit = buildFix(page('<main><h1>Plans</h1><img src="/a.png"></main>', '<meta name="description" content="A queue you can hand to an agent from the saved report.">'), pageUrl, { robots: null, sitemap: false, llmsTxt: false, agents: {} });
-  const saved = saveReport({
-    url: pageUrl,
-    host: 'example.com',
-    createdAt: '2026-10-22T00:00:00.000Z',
-    extras: { robots: null, sitemap: false, llmsTxt: false, agents: {} },
-    originalHtml: 'x',
-    kit,
-  }, dir);
-  const pageRes = await fetch(`${base}/report/${saved.id}`);
+await withServer(18921, async (base) => {
+  const pageRes = await fetch(`${base}/report`);
   assert.equal(pageRes.status, 200);
   const html = await pageRes.text();
-  assert.match(html, /Fix kit/);
-  assert.match(html, /Before /);
-  assert.match(html, /Anyone with this link can open the report/);
-  assert.match(html, /A scan report is stored so its link keeps working/);
-  assert.doesNotMatch(html.slice(html.indexOf('id="fixkit"')), DASH);
-  const patched = await fetch(`${base}/report/${saved.id}/patched.html`);
-  assert.equal(patched.status, 200);
-  assert.match(patched.headers.get('content-disposition') || '', /attachment/);
-  assert.match(await patched.text(), /alt="Plans"/);
-  const diff = await fetch(`${base}/report/${saved.id}/fixes.diff`);
-  assert.match(await diff.text(), /--- before/);
-  const robots = await fetch(`${base}/report/${saved.id}/robots.txt`);
-  assert.match(await robots.text(), /Allow: \//);
+  assert.match(html, /deflate-raw/);
+  assert.match(html, /Nothing is stored on the server/);
+  assert.match(html, /Reports stay in the link, not on the server/);
+  assert.doesNotMatch(html, /stored so the link keeps working/);
+  assert.equal(html.includes('AGENTSCORE_GITHUB=1'), false);
+  assert.doesNotMatch(html, /id="fix-github"/);
   const missing = await fetch(`${base}/report/does-not-exist-1`);
   assert.equal(missing.status, 404);
   const llms = await fetch(`${base}/llms.txt`);
-  assert.match(await llms.text(), /A scan report is stored so its link keeps working/);
+  const llmsText = await llms.text();
+  assert.match(llmsText, /encoded in the link/);
+  assert.match(llmsText, /Nothing is stored on the server/);
+  assert.doesNotMatch(llmsText, /stored so the link keeps working/);
 });
 
 console.log('ALL FIX TESTS PASSED');

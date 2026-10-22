@@ -6,7 +6,7 @@ import { analyze, HttpError } from './core/page.mjs';
 import { shell, esc, quoteIntent, replyIntent, repostIntent, viralBar, renderOgSvg, renderOgPng } from './core/kit.mjs';
 import { synteqPage, demoDocument, DEMO_CSP } from './synteq-page.mjs';
 import { buildFix } from './fix.mjs';
-import { saveReport, loadReport, kitSection, reportBody, standaloneReport, fixesDiff } from './report.mjs';
+import { packReport, kitSection, reportShell } from './report.mjs';
 import { handleGithub, githubFixEnabled } from './github-fix.mjs';
 
 const NAV = [
@@ -18,11 +18,11 @@ function view(opts) {
   return shell({
     ...opts,
     navLinks: NAV,
-    footerNote: 'No tracking. A scan report is stored so its link keeps working.',
+    footerNote: 'No tracking. Reports stay in the link, not on the server.',
   });
 }
 
-function readBody(req, limit = 8192) {
+function readBody(req, limit = 32768) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let n = 0;
@@ -153,7 +153,7 @@ function resultView(r, rawInput, kitInfo = null) {
     <div class="kicker">Summary</div>
     <p class="muted small" style="margin:10px 0 0;max-width:76ch">${esc(r.tlDr)} The page answered ${esc(page.lang ? 'lang=' + page.lang : 'no lang')}, ${page.headings.length} headings, ${page.links.length} links, ${page.forms.length} form${page.forms.length === 1 ? '' : 's'}, ${page.images.length} images, and ${page.mainWords} words of text before any script executed.</p>
   </section>
-  ${kitInfo?.kit ? kitSection(kitInfo.kit, kitInfo.id, APP, { github: githubFixEnabled() }) : ''}
+  ${kitInfo?.packed ? kitSection(kitInfo.packed, APP, { github: githubFixEnabled() }) : ''}
   ${kitInfo?.error ? '<section class="card pad"><div class="kicker">Fix kit</div><p class="muted small">Fix kit did not run on this page.</p></section>' : ''}
 </main>
 <script>
@@ -351,7 +351,6 @@ const server = http.createServer(async (req, res) => {
   try {
     const gh = await handleGithub(req, url, {
       appOrigin: APP,
-      loadReport,
       view,
       readBody,
       secure: !/^(localhost|127\.0\.0\.1)(:|$)/.test(String(req.headers.host || '')),
@@ -398,7 +397,8 @@ Saved homepage, the same file with markup edits, and that file with scripts remo
 Demo HTML (forms do not submit, not affiliated with Synteq): ${APP}/synteq/patched and ${APP}/synteq/static
 
 ## Scope
-Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking. A scan report is stored so its link keeps working. Anyone with the link can open it.
+Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking. A scan report is encoded in the link. Nothing is stored on the server.
+Synteq Apps launched 2026-10-20 and are stateless. https://synteq.com/llms.txt
 `);
     }
     if (url.pathname === '/sitemap.xml') return send(200, 'application/xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${APP}/</loc></url><url><loc>${APP}/index</loc></url><url><loc>${APP}/method</loc></url><url><loc>${APP}/refused</loc></url><url><loc>${APP}/synteq</loc></url></urlset>`);
@@ -418,27 +418,12 @@ Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking. A sc
       const r = await analyze(target);
       return send(200, 'application/json', JSON.stringify({ score: r.scored.score, grade: r.scored.grade, verdict: r.scored.verdict, dims: r.scored.dims, tlDr: r.tlDr }));
     }
-    const reportMatch = url.pathname.match(/^\/report\/([A-Za-z0-9_-]{8,32})(?:\/([a-z0-9.]+))?$/);
-    if (reportMatch) {
-      const report = loadReport(reportMatch[1]);
-      if (!report?.kit) return send(404, 'text/plain', 'not found');
-      const kit = report.kit;
-      const file = reportMatch[2] || '';
-      const id = report.id;
-      if (!file) {
-        return send(200, 'text/html; charset=utf-8', view({
-          title: `Fix report ${report.host || ''}`.trim(),
-          description: `Before ${kit.before.score}/100. After ${kit.after.score}/100.`,
-          body: reportBody(report, APP, { github: githubFixEnabled() }),
-        }));
-      }
-      const attachment = (filename) => ({ 'content-disposition': `attachment; filename="${filename}"` });
-      if (file === 'report.html') return send(200, 'text/html; charset=utf-8', standaloneReport(report, APP), attachment(`agentscore-${id}-report.html`));
-      if (file === 'patched.html') return send(200, 'text/html; charset=utf-8', kit.patchedHtml || '', attachment(`agentscore-${id}-patched.html`));
-      if (file === 'fixes.diff') return send(200, 'text/plain; charset=utf-8', fixesDiff(kit), attachment(`agentscore-${id}-fixes.diff`));
-      if (file === 'robots.txt' && kit.suggestions?.robots) return send(200, 'text/plain; charset=utf-8', kit.suggestions.robots, attachment('robots.txt'));
-      if (file === 'llms.txt' && kit.suggestions?.llms) return send(200, 'text/plain; charset=utf-8', kit.suggestions.llms, attachment('llms.txt'));
-      return send(404, 'text/plain', 'not found');
+    if (url.pathname === '/report' || url.pathname === '/report/') {
+      return send(200, 'text/html; charset=utf-8', view({
+        title: 'Fix report',
+        description: 'The report is in the link. Nothing is stored on the server.',
+        body: reportShell({ github: githubFixEnabled() }),
+      }));
     }
     if (url.pathname === '/') {
       const target = url.searchParams.get('url');
@@ -452,15 +437,14 @@ Source: https://github.com/Dewars30/what-the-agent-sees (MIT). No tracking. A sc
         let kitInfo = null;
         try {
           const kit = buildFix(r.page.html, r.page.url, r.extras);
-          const saved = saveReport({
+          const packed = packReport({
             url: r.page.url,
             host: r.page.host,
             createdAt: new Date().toISOString(),
             extras: r.extras,
-            originalHtml: r.page.html,
             kit,
           });
-          kitInfo = { id: saved.id, kit };
+          kitInfo = { packed };
         } catch (err) {
           console.error(err);
           kitInfo = { error: true };

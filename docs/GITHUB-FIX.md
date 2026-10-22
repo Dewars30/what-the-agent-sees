@@ -2,6 +2,8 @@
 
 AgentScore can open a pull request from the fix kit. The flow is off until the variables below are set on the `agentscore` app. This repo does not contain a client secret. An OAuth app was not registered from here, and nothing was deployed.
 
+Synteq Apps, launched 2026-10-20, are stateless: read-only disk except tmp, no database, no preview deploy. See https://synteq.com/llms.txt and https://synteq.com/blogs/introducing-synteq-apps-and-serverless-functions. This flow stays inside the AgentScore app. It does not use Synteq Functions. Credentials are per-app secrets on `agentscore`.
+
 ## What you set up
 
 1. GitHub: Settings, Developer settings, OAuth Apps, New OAuth App.
@@ -9,7 +11,7 @@ AgentScore can open a pull request from the fix kit. The flow is off until the v
 3. Homepage URL: `https://agentscore.synteq.app`
 4. Authorization callback URL: `https://agentscore.synteq.app/github/fix/callback`
 5. Register the app, then generate a client secret. Copy the client id and the secret once.
-6. On the Synteq app `agentscore`, set:
+6. On the Synteq app `agentscore`, set these secrets:
    - `GITHUB_FIX_ENABLED=1`
    - `GITHUB_CLIENT_ID` to the OAuth app client id
    - `GITHUB_CLIENT_SECRET` to the client secret
@@ -28,10 +30,11 @@ The user picks one repository. The app does not choose one for them.
 ## What the running app does
 
 - `Fix it for me` is rendered only when the flag and both credentials are set.
+- The scan report is not stored. It is compressed into `/report#...`. The button copies the scores and the page URL into this browser tab, then sends them with the chosen repository.
 - The user signs in, picks a public repository, and gets a pull request to review.
-- The app creates `agentscore/fix-<report id>` from the default branch tip and commits only on that branch.
+- The app creates `agentscore/fix-<id>` from the default branch tip and commits only on that branch.
 - It does not update the default branch.
-- The access token is kept in process memory for one hour (`ag_gh` cookie, HttpOnly, SameSite=Lax). It is not written to disk, not stored in the report, and not logged.
+- The access token is kept in process memory for one hour (`ag_gh` cookie, HttpOnly, SameSite=Lax). It is not written to disk, not put in the report link, and not logged. A restart drops the login.
 - Framework detection reads `package.json`. `next` means Next.js. `astro` means Astro. An `index.html` at the repo root, with neither dependency, means plain HTML.
 - Anything else stops at the report. No pull request.
 - The scanned URL path is mapped to one source file (`index.html`, `app/.../page.tsx`, `src/pages/...astro`, and the usual variants). If none of those files exist, the result is the report only.

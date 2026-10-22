@@ -3,7 +3,7 @@
 import crypto from 'node:crypto';
 import { esc } from './core/kit.mjs';
 import { buildFix } from './fix.mjs';
-import { reportIdOk } from './report.mjs';
+import { reportIdOk, slimExtras } from './report.mjs';
 
 const STATE_TTL = 10 * 60 * 1000;
 const SESSION_TTL = 60 * 60 * 1000;
@@ -27,11 +27,11 @@ function sweep(map, now) {
   for (const [k, v] of map) if (v.exp <= now) map.delete(k);
 }
 
-export function issueState(reportId) {
+export function issueState() {
   const now = Date.now();
   sweep(states, now);
   const state = crypto.randomBytes(16).toString('base64url');
-  states.set(state, { reportId, exp: now + STATE_TTL });
+  states.set(state, { exp: now + STATE_TTL });
   return state;
 }
 
@@ -40,8 +40,27 @@ export function takeState(state) {
   sweep(states, now);
   const row = states.get(state);
   states.delete(state);
-  if (!row || row.exp <= now) return null;
-  return row.reportId;
+  if (!row || row.exp <= now) return false;
+  return true;
+}
+
+export function reportFromGithubPayload(raw) {
+  if (!raw || String(raw).length > 32000) return null;
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!data || typeof data.url !== 'string' || !/^https?:\/\//i.test(data.url)) return null;
+  if (!Number.isFinite(data.before) || !Number.isFinite(data.after)) return null;
+  return {
+    id: crypto.randomBytes(9).toString('base64url'),
+    url: data.url.slice(0, 2000),
+    host: String(data.host || '').slice(0, 200),
+    extras: slimExtras(data.extras || {}),
+    kit: { before: { score: data.before }, after: { score: data.after } },
+  };
 }
 
 export function createSession(token) {
@@ -395,17 +414,30 @@ function html(status, body, headers) {
   return { status, type: 'text/html; charset=utf-8', body, headers };
 }
 
-export function reposBody(repos, reportId) {
+export function reposBody(repos) {
   const buttons = (repos || []).map((r) => `<form method="post" action="/github/fix/open" style="margin:8px 0">
-    <input type="hidden" name="report" value="${esc(reportId)}">
     <input type="hidden" name="repo" value="${esc(r.fullName)}">
+    <input type="hidden" name="payload" value="">
     <button class="btn" type="submit">${esc(r.fullName)}</button>
   </form>`).join('');
   return `<main>
     <h1 class="hero" style="font-size:clamp(26px,4vw,40px)">Pick a repository</h1>
     <p class="sub">Public repositories only. A pull request is opened on a new branch. The default branch is not updated.</p>
+    <p class="muted small" id="gh-missing" hidden>Scan a page in this tab first. The report is in the link, not on the server.</p>
     ${buttons || '<p>No public repository was returned for this login.</p>'}
-  </main>`;
+  </main>
+  <script>
+  if (!sessionStorage.getItem('agentscore-github')) {
+    const note = document.getElementById('gh-missing');
+    if (note) note.hidden = false;
+  }
+  document.querySelectorAll('form[action="/github/fix/open"]').forEach((form) => {
+    form.addEventListener('submit', () => {
+      const field = form.querySelector('[name=payload]');
+      if (field) field.value = sessionStorage.getItem('agentscore-github') || '';
+    });
+  });
+  </script>`;
 }
 
 export async function handleGithub(req, url, ctx) {
@@ -414,9 +446,7 @@ export async function handleGithub(req, url, ctx) {
   const redirectUri = `${ctx.appOrigin}/github/fix/callback`;
   try {
     if (url.pathname === '/github/fix/start') {
-      const id = url.searchParams.get('report') || '';
-      if (!reportIdOk(id) || !ctx.loadReport(id)) return text(400, 'missing report');
-      const state = issueState(id);
+      const state = issueState();
       const location = authorizeUrl({
         clientId: process.env.GITHUB_CLIENT_ID,
         redirectUri,
@@ -432,35 +462,31 @@ export async function handleGithub(req, url, ctx) {
           body: '<main><p>GitHub did not authorize this app.</p></main>',
         }));
       }
-      const reportId = takeState(url.searchParams.get('state') || '');
       const code = url.searchParams.get('code') || '';
-      if (!code || !reportId) return text(400, 'bad state');
+      if (!code || !takeState(url.searchParams.get('state') || '')) return text(400, 'bad state');
       const token = await exchangeCode({ code, redirectUri });
       const sid = createSession(token);
       return text(302, 'redirect', {
-        location: `/github/fix/repos?report=${encodeURIComponent(reportId)}`,
+        location: '/github/fix/repos',
         'set-cookie': sessionCookie(sid, ctx.secure),
       });
     }
     if (url.pathname === '/github/fix/repos' && req.method === 'GET') {
-      const id = url.searchParams.get('report') || '';
-      if (!reportIdOk(id) || !ctx.loadReport(id)) return text(400, 'missing report');
       const token = sessionToken(readCookie(req.headers.cookie, 'ag_gh'));
-      if (!token) return text(302, 'redirect', { location: `/github/fix/start?report=${encodeURIComponent(id)}` });
+      if (!token) return text(302, 'redirect', { location: '/github/fix/start' });
       const repos = await createGithubClient(token).listRepos();
       return html(200, ctx.view({
         title: 'Pick a repository',
         description: 'Public repositories only.',
-        body: reposBody(repos, id),
+        body: reposBody(repos),
       }));
     }
     if (url.pathname === '/github/fix/open' && req.method === 'POST') {
       const raw = await ctx.readBody(req);
       const form = new URLSearchParams(raw);
-      const id = form.get('report') || '';
       const repo = splitRepo(form.get('repo') || '');
-      const report = reportIdOk(id) ? ctx.loadReport(id) : null;
-      if (!repo || !report?.kit) return text(400, 'missing report');
+      const report = reportFromGithubPayload(form.get('payload') || '');
+      if (!repo || !report) return text(400, 'missing report');
       const token = sessionToken(readCookie(req.headers.cookie, 'ag_gh'));
       if (!token) return text(401, 'sign in required');
       const client = createGithubClient(token);
@@ -469,13 +495,13 @@ export async function handleGithub(req, url, ctx) {
         return html(200, ctx.view({
           title: 'Report only',
           description: plan.reason,
-          body: `<main><h1 class="hero" style="font-size:clamp(26px,4vw,40px)">Report only</h1><p class="sub">${esc(plan.reason)}</p><p><a href="/report/${esc(id)}">Open the report</a></p></main>`,
+          body: `<main><h1 class="hero" style="font-size:clamp(26px,4vw,40px)">Report only</h1><p class="sub">${esc(plan.reason)}</p><p><a href="/">Back to the scan</a></p></main>`,
         }));
       }
       const pr = await openFixPullRequest(client, {
         owner: repo.owner,
         repo: repo.repo,
-        reportId: id,
+        reportId: report.id,
         scanned: { url: report.url, before: report.kit.before.score, after: report.kit.after.score },
         plan,
       });

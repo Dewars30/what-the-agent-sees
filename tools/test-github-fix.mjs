@@ -1,11 +1,9 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { buildFix } from '../apps/agentscore/fix.mjs';
-import { saveReport } from '../apps/agentscore/report.mjs';
+import { packReport, kitSection } from '../apps/agentscore/report.mjs';
 import {
   githubFixEnabled,
   detectFramework,
@@ -16,6 +14,7 @@ import {
   exchangeCode,
   issueState,
   takeState,
+  reportFromGithubPayload,
 } from '../apps/agentscore/github-fix.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -212,21 +211,49 @@ console.log('6. contents writes name the new branch, and token exchange hides th
   );
 }
 
-console.log('7. state is single use');
+console.log('7. state is single use and carries no report');
 {
-  const id = 'abcdefghij12';
-  const state = issueState(id);
-  assert.equal(takeState(state), id);
-  assert.equal(takeState(state), null);
+  const state = issueState();
+  assert.equal(typeof state, 'string');
+  assert.ok(state.length >= 16);
+  assert.equal(takeState(state), true);
+  assert.equal(takeState(state), false);
+  assert.equal(takeState('missing'), false);
+}
+
+console.log('7b. GitHub payload is scores and a URL, not a stored report');
+{
+  assert.equal(reportFromGithubPayload(''), null);
+  assert.equal(reportFromGithubPayload('{'), null);
+  assert.equal(reportFromGithubPayload(JSON.stringify({ url: 'javascript:alert(1)', before: 1, after: 2 })), null);
+  assert.equal(reportFromGithubPayload(JSON.stringify({ url: pageUrl, before: '20', after: 31 })), null);
+  assert.equal(reportFromGithubPayload('x'.repeat(32001)), null);
+  const row = reportFromGithubPayload(JSON.stringify({
+    url: pageUrl,
+    host: 'example.com',
+    before: 20,
+    after: 31,
+    extras: { robots: null, sitemap: false, llmsTxt: false, agents: {} },
+    patchedHtml: '<script>alert(1)</script>',
+    originalHtml: 'secret',
+  }));
+  assert.ok(row);
+  assert.match(row.id, /^[A-Za-z0-9_-]{8,32}$/);
+  assert.equal(row.url, pageUrl);
+  assert.equal(row.kit.before.score, 20);
+  assert.equal(row.kit.after.score, 31);
+  assert.equal(row.patchedHtml, undefined);
+  assert.equal(row.originalHtml, undefined);
+  assert.equal(JSON.stringify(row).includes('gho_'), false);
+  assert.equal(JSON.stringify(row).includes('<script>'), false);
 }
 
 console.log('8. routes: hidden until the flag is on, then the authorize redirect');
 
 function withServer(port, env, fn) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentscore-gh-'));
   const proc = spawn(process.execPath, ['server.mjs'], {
     cwd: path.join(root, 'apps/agentscore'),
-    env: { ...process.env, PORT: String(port), AGENTSCORE_DATA_DIR: dir, ...env },
+    env: { ...process.env, PORT: String(port), AGENTSCORE_DATA_DIR: '', ...env },
     stdio: 'ignore',
   });
   return (async () => {
@@ -240,23 +267,26 @@ function withServer(port, env, fn) {
         await new Promise((r) => setTimeout(r, 80));
       }
       assert.equal(up, true, 'server did not start');
-      await fn(`http://127.0.0.1:${port}`, dir);
+      await fn(`http://127.0.0.1:${port}`);
     } finally {
       proc.kill('SIGTERM');
     }
   })();
 }
 
-await withServer(18931, { GITHUB_FIX_ENABLED: '', GITHUB_CLIENT_ID: '', GITHUB_CLIENT_SECRET: '' }, async (base, dir) => {
+await withServer(18931, { GITHUB_FIX_ENABLED: '', GITHUB_CLIENT_ID: '', GITHUB_CLIENT_SECRET: '' }, async (base) => {
   const off = await fetch(`${base}/github/fix/start`);
   assert.equal(off.status, 404);
   assert.equal(await off.text(), 'not enabled');
-  const kit = buildFix(doc('<main><h1>Plans</h1><img src="/a.png"></main>'), pageUrl, {});
-  const saved = saveReport({ url: pageUrl, host: 'example.com', createdAt: '2026-10-22T00:00:00.000Z', extras: {}, originalHtml: 'x', kit }, dir);
-  const report = await fetch(`${base}/report/${saved.id}`);
+  const report = await fetch(`${base}/report`);
   const html = await report.text();
-  assert.equal(html.includes('Fix it for me'), false);
-  assert.equal(JSON.stringify(saved).includes('gho_'), false);
+  assert.equal(html.includes('AGENTSCORE_GITHUB=1'), false);
+  assert.doesNotMatch(html, /id="fix-github"/);
+  const kit = buildFix(doc('<main><h1>Plans</h1><img src="/a.png"></main>'), pageUrl, {});
+  const packed = packReport({ url: pageUrl, host: 'example.com', createdAt: '2026-10-22T00:00:00.000Z', extras: {}, kit });
+  const section = kitSection(packed, 'https://agentscore.synteq.app');
+  assert.equal(section.includes('id="fix-github"'), false);
+  assert.equal(JSON.stringify(packed.report).includes('gho_'), false);
 });
 
 await withServer(18932, {
@@ -264,12 +294,8 @@ await withServer(18932, {
   GITHUB_CLIENT_ID: 'Iv1.test',
   GITHUB_CLIENT_SECRET: 'sec',
   PUBLIC_ORIGIN: 'https://agentscore.synteq.app',
-}, async (base, dir) => {
-  const missing = await fetch(`${base}/github/fix/start`, { redirect: 'manual' });
-  assert.equal(missing.status, 400);
-  const kit = buildFix(doc('<main><h1>Plans</h1><img src="/a.png"></main>'), pageUrl, {});
-  const saved = saveReport({ url: pageUrl, host: 'example.com', createdAt: '2026-10-22T00:00:00.000Z', extras: {}, originalHtml: 'x', kit }, dir);
-  const start = await fetch(`${base}/github/fix/start?report=${saved.id}`, { redirect: 'manual' });
+}, async (base) => {
+  const start = await fetch(`${base}/github/fix/start`, { redirect: 'manual' });
   assert.equal(start.status, 302);
   const loc = start.headers.get('location') || '';
   const u = new URL(loc);
@@ -278,13 +304,25 @@ await withServer(18932, {
   assert.equal(u.searchParams.get('client_id'), 'Iv1.test');
   assert.equal(u.searchParams.get('redirect_uri'), 'https://agentscore.synteq.app/github/fix/callback');
   assert.ok(u.searchParams.get('state'));
-  const page = await fetch(`${base}/report/${saved.id}`);
-  assert.match(await page.text(), /Fix it for me/);
+  const page = await fetch(`${base}/report`);
+  assert.match(await page.text(), /AGENTSCORE_GITHUB=1/);
   const callback = await fetch(`${base}/github/fix/callback`, { redirect: 'manual' });
   assert.equal(callback.status, 400);
-  const repos = await fetch(`${base}/github/fix/repos?report=${saved.id}`, { redirect: 'manual' });
+  const repos = await fetch(`${base}/github/fix/repos`, { redirect: 'manual' });
   assert.equal(repos.status, 302);
-  assert.match(repos.headers.get('location') || '', /\/github\/fix\/start\?report=/);
+  assert.equal(repos.headers.get('location'), '/github/fix/start');
+  const payload = JSON.stringify({ url: pageUrl, host: 'example.com', before: 20, after: 31, extras: {} });
+  const open = await fetch(`${base}/github/fix/open`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ repo: 'octo/site', payload }).toString(),
+    redirect: 'manual',
+  });
+  assert.equal(open.status, 401);
+  assert.equal(await open.text(), 'sign in required');
+  const kit = buildFix(doc('<main><h1>Plans</h1><img src="/a.png"></main>'), pageUrl, {});
+  const packed = packReport({ url: pageUrl, host: 'example.com', createdAt: '2026-10-22T00:00:00.000Z', extras: {}, kit });
+  assert.match(kitSection(packed, 'https://agentscore.synteq.app', { github: true }), /id="fix-github"/);
 });
 
 console.log('ALL GITHUB FIX TESTS PASSED');
