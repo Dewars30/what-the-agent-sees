@@ -634,7 +634,8 @@ export async function createApp(existingStore) {
     }
     const origin = originOf(c);
     if (c.req.query('format') === 'txt') return plain(c, dateText({ origin, ...loaded }));
-    return html(c, datePage({ origin, ...loaded }));
+    const qr = await qrSvg(`${origin}/d/${loaded.date.id}`);
+    return html(c, datePage({ origin, ...loaded, qr }));
   });
 
   function terminatedCard(loaded, url) {
@@ -643,6 +644,7 @@ export async function createApp(existingStore) {
       b: loaded.b,
       headline: cardHeadline(loaded.date),
       trust: scoreText(loaded.date.trust),
+      breakup: loaded.date.status === 'terminated',
       url,
     };
   }

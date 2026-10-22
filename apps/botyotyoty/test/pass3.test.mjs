@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
+import { centeredTextIsPainted, urlIsPainted } from '../lib/cardpng.mjs';
 import { BREAKUP_LINE, dateLine, runDate } from '../lib/date.mjs';
 import { trustValue } from '../lib/trust.mjs';
 import { createMemoryStore } from '../lib/store.mjs';
@@ -89,6 +90,26 @@ describe('pass 3', { concurrency: false }, () => {
     assert.equal(loop.round_count, 7);
     assert.ok(loop.trust < 0.125);
     assert.equal(loop.trust.toFixed(2), '0.11');
+    const payload = 'amber falcon marble granite pebble quartz vessel lantern cedar willow orchid maple';
+    const signature = {
+      q1: `${payload} same point`,
+      q2: 'same point again here',
+      q3: 'same point on the limit',
+      q4: 'same point kiln',
+      q5: payload,
+      q6: 'build things',
+      q7: 'same point date',
+      q8: 'same point deal',
+    };
+    const signed = runDate(
+      { type: 'Builder', name: 'Loop', answers: signature },
+      { type: 'Builder', name: 'Echo', answers: signature },
+    );
+    assert.equal(signed.rounds.map((round) => (round.productive ? 'P' : 'U')).join(''), 'UPUUUUUU');
+    assert.equal(signed.status, 'terminated');
+    assert.equal(signed.round_count, 8);
+    assert.ok(signed.trust < 0.125);
+    assert.equal(signed.trust.toFixed(2), '0.12');
     const variedA = {
       type: 'Builder',
       name: 'Ada',
@@ -112,8 +133,21 @@ describe('pass 3', { concurrency: false }, () => {
   test('pass 3 exit: a date can fall below 0.125 and the card downloads', async () => {
     const store = createMemoryStore();
     const app = await createApp(store);
-    const left = await approve(app, { ...LOOP, name: 'Loop Bot' });
-    const right = await approve(app, { ...LOOP, name: 'Echo Bot', q6: 'explore new ideas', jab: 'My person hums through the rerun.' });
+    const payload = 'amber falcon marble granite pebble quartz vessel lantern cedar willow orchid maple';
+    const signature = {
+      q1: `${payload} same point`,
+      q2: 'same point again here',
+      q3: 'same point on the limit',
+      q4: 'same point kiln',
+      q5: payload,
+      q6: 'build things',
+      q7: 'same point date',
+      q8: 'same point deal',
+      kind: 'Grok',
+      avatar: 'cube, brown, 2 eyes, bowtie, glossy',
+    };
+    const left = await approve(app, { ...signature, name: 'Loop Bot', jab: 'My person narrates every loop out loud.' });
+    const right = await approve(app, { ...signature, name: 'Echo Bot', jab: 'My person hums through the rerun.' });
     const location = await pair(app, left.token, right.handle, 'Both of them stay on one sentence until it breaks.');
     const id = location.slice(6);
     await app.request(appUrl(`/p/${left.token}/pair/${id}/accept`), { method: 'POST' });
@@ -132,7 +166,8 @@ describe('pass 3', { concurrency: false }, () => {
     const page = await app.request(appUrl(datePath));
     assert.equal(page.status, 200);
     const html = await page.text();
-    assert.match(html, /Terminated after 7 rounds\. Trust 0\.11\./);
+    assert.match(html, /Terminated after 8 rounds\. Trust 0\.12\./);
+    assert.match(html, /class="qr"/);
     assert.match(html, /It&#39;s not you, it&#39;s your termination predicate\./);
     assert.match(html, /property="og:title"/);
     assert.match(html, /property="og:description"/);
@@ -145,7 +180,7 @@ describe('pass 3', { concurrency: false }, () => {
     assert.doesNotMatch(html, /about me|@grok|please repost|please like/i);
     assert.doesNotMatch(html, /narrates every loop|hums through the rerun/);
     const text = await (await app.request(appUrl(`${datePath}?format=txt`))).text();
-    assert.match(text, /^I will say the same point again\./);
+    assert.match(text, /^amber falcon marble granite pebble quartz vessel lantern cedar willow orchid maple same point/);
     assert.match(text, /A note on my human/);
     assert.ok(text.indexOf('A note on my human') > text.indexOf(BREAKUP_LINE));
     const png = await app.request(appUrl(`${datePath}/card.png`));
@@ -156,10 +191,13 @@ describe('pass 3', { concurrency: false }, () => {
     assert.equal(buf.readUInt32BE(16), 1080);
     assert.equal(buf.readUInt32BE(20), 1350);
     assert.ok(buf.includes(Buffer.from(`${base}${datePath}`)));
+    assert.equal(urlIsPainted(buf, `${base}${datePath}`), true);
+    assert.equal(centeredTextIsPainted(buf, 'ITS NOT YOU, ITS YOUR TERMINATION PREDICATE', { color: [246, 239, 232], maxChars: 52 }), true);
     const og = Buffer.from(await (await app.request(appUrl(`${datePath}/og.png`))).arrayBuffer());
     assert.equal(og.readUInt32BE(16), 1200);
     assert.equal(og.readUInt32BE(20), 630);
     assert.ok(og.includes(Buffer.from(`${base}${datePath}`)));
+    assert.equal(urlIsPainted(og, `${base}${datePath}`), true);
   });
 
   test('human stories: veto, pause, and no date on a pass', async () => {

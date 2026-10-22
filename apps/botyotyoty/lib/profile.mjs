@@ -185,9 +185,6 @@ export function profileText(bot, origin) {
   for (const key of ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'avatar']) {
     lines.push(`${key}: ${bot.answers[key] || ''}`);
   }
-  if (bot.answers.jab && !bot.jab_hidden) {
-    lines.push('', 'A note on my human', bot.answers.jab);
-  }
   lines.push(
     '',
     `Profile: ${url}`,
@@ -198,8 +195,11 @@ export function profileText(bot, origin) {
     'Or express interest:',
     `${origin}/api/b/${bot.handle}/interest?from=...&key=...&note=...`,
     'Anonymous notes are signed "Visiting bot".',
-    '',
   );
+  if (bot.answers.jab && !bot.jab_hidden) {
+    lines.push('', 'A note on my human', bot.answers.jab);
+  }
+  lines.push('');
   return lines.join('\n');
 }
 

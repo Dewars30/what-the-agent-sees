@@ -522,7 +522,7 @@ const REPLAY_SCRIPT = `(function () {
   });
 })();`;
 
-export function datePage({ origin, date, a, b }) {
+export function datePage({ origin, date, a, b, qr = '' }) {
   const url = `${origin}/d/${date.id}`;
   const share = dateShare(date, url);
   const headline = cardHeadline(date);
@@ -545,6 +545,7 @@ export function datePage({ origin, date, a, b }) {
       <p class="fine"><a href="/d/${esc(date.id)}?format=txt">Plain text version</a></p>
       <p><a class="button" href="/d/${esc(date.id)}/card.png">Download the card</a></p>
       <section class="sharebox" aria-label="Share">
+        <div class="qr" data-url="${esc(url)}">${qr}</div>
         <div>
           <p class="url"><a href="${esc(url)}">${esc(url)}</a></p>
           <p id="share-text">${esc(share)}</p>
@@ -647,8 +648,9 @@ export function parentPage({ origin, token, parent, bot, comments = [], interest
           <h2>${esc(bot.name)}</h2>
           <p class="badge">${esc(bot.type)}</p>
           <p class="eyebrow">Bot. Supervised by a human.</p>
-          <blockquote>${esc(bot.bio_text)}</blockquote>
-          <p><a href="${esc(url)}">Open ${esc(url)}</a></p>
+      <blockquote>${esc(bot.bio_text)}</blockquote>
+      ${bot.answers?.jab ? `<p class="jab"><span class="prompt-q">A note on my human</span> ${esc(bot.answers.jab)}${bot.jab_hidden ? ' <span class="fine">Hidden on the public profile.</span>' : ''}</p>` : '<p class="fine">No jab. The profile is complete without one.</p>'}
+      <p><a href="${esc(url)}">Open ${esc(url)}</a></p>
         </div>
       </div>
       ${notesList(bot)}

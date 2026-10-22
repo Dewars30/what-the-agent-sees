@@ -1,4 +1,4 @@
-import { deflateSync } from 'node:zlib';
+import { deflateSync, inflateSync } from 'node:zlib';
 
 // 5x7 bitmap, uppercase only. Apostrophes are dropped. Ampersands become AND.
 const GLYPHS = {
@@ -161,8 +161,8 @@ function createSurface(width, height) {
   }
   function burnUrl(url, y, scale = 2) {
     if (!url) return;
-    const lines = wrapLines(url, Math.floor((width - 80) / (6 * scale)), 2);
-    lines.forEach((line, index) => drawCentered(line, y + index * (8 * scale), scale, DIM, 80));
+    const lines = burnedUrlLines(url, width, scale);
+    lines.forEach((line, index) => drawCentered(line, y + index * (8 * scale), scale, DIM, line.length));
   }
   return { fillRect, fillCircle, drawText, drawCentered, burnUrl, encode };
 }
@@ -333,7 +333,7 @@ export function matchOgPng(card) {
   return cached(key, () => paintMatchWide(card));
 }
 
-function paintTerminated(width, height, { a, b, headline, trust, url }) {
+function paintTerminated(width, height, { a, b, headline, trust, url, breakup }) {
   const surface = createSurface(width, height);
   paintFrame(surface, width, height);
   const margin = width > 1100 ? 48 : 36;
@@ -342,18 +342,114 @@ function paintTerminated(width, height, { a, b, headline, trust, url }) {
   surface.drawCentered('BOTY-OTY-OTY', margin + 40, 3, MAG, 16);
   surface.drawCentered(headline, margin + 110, width > 1100 ? 4 : 3, INK, 42);
   surface.drawCentered(`TRUST ${trust}`, margin + 190, 5, MAG, 12);
-  surface.drawCentered('ITS NOT YOU, ITS YOUR TERMINATION PREDICATE', margin + 270, 2, INK, 52);
+  if (breakup) surface.drawCentered('ITS NOT YOU, ITS YOUR TERMINATION PREDICATE', margin + 270, 2, INK, 52);
   surface.drawCentered(`${a.name} AND ${b.name}`, margin + 330, 3, DIM, 36);
   surface.burnUrl(url, height - 70, 2);
   return surface.encode(url);
 }
 
 export function terminatedOgPng(card) {
-  const key = `tend-og:${card.url}:${card.headline}:${card.trust}`;
+  const key = `tend-og:${card.url}:${card.headline}:${card.trust}:${card.breakup ? 1 : 0}`;
   return cached(key, () => paintTerminated(1200, 630, card));
 }
 
 export function terminatedCardPng(card) {
-  const key = `tend-card:${card.url}:${card.headline}:${card.trust}`;
+  const key = `tend-card:${card.url}:${card.headline}:${card.trust}:${card.breakup ? 1 : 0}`;
   return cached(key, () => paintTerminated(1080, 1350, card));
+}
+
+export function burnedUrlLines(url, width, scale = 2) {
+  const maxChars = Math.max(8, Math.floor((width - 64) / (6 * scale)));
+  const clean = sanitizeCardText(url, maxChars * 2);
+  const lines = [];
+  for (let i = 0; i < clean.length && lines.length < 2; i += maxChars) {
+    lines.push(clean.slice(i, i + maxChars));
+  }
+  return lines;
+}
+
+export function pngPixels(png) {
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  const idats = [];
+  while (offset + 8 <= png.length) {
+    const len = png.readUInt32BE(offset);
+    const type = png.toString('ascii', offset + 4, offset + 8);
+    const data = png.subarray(offset + 8, offset + 8 + len);
+    if (type === 'IHDR') {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+    } else if (type === 'IDAT') {
+      idats.push(data);
+    } else if (type === 'IEND') break;
+    offset += 12 + len;
+  }
+  const raw = inflateSync(Buffer.concat(idats));
+  const stride = width * 3 + 1;
+  const pixels = Buffer.alloc(width * height * 3);
+  for (let y = 0; y < height; y++) {
+    if (raw[y * stride] !== 0) throw new Error('png row filter is not none');
+    raw.copy(pixels, y * width * 3, y * stride + 1, y * stride + 1 + width * 3);
+  }
+  return { width, height, pixels };
+}
+
+function colorAt(pixels, width, x, y) {
+  const i = (y * width + x) * 3;
+  return [pixels[i], pixels[i + 1], pixels[i + 2]];
+}
+
+function centeredLineAt(pixels, width, height, line, x, y, scale, color) {
+  const glyphH = 7 * scale;
+  if (y < 0 || y + glyphH > height) return false;
+  for (let i = 0; i < line.length; i++) {
+    const glyph = GLYPHS[line[i]] || GLYPHS[' '];
+    for (let row = 0; row < 7; row++) {
+      const bits = glyph[row];
+      for (let col = 0; col < 5; col++) {
+        if (!((bits >> (4 - col)) & 1)) continue;
+        const px = x + i * 6 * scale + col * scale;
+        const py = y + row * scale;
+        for (let dy = 0; dy < scale; dy++) {
+          for (let dx = 0; dx < scale; dx++) {
+            if (px + dx < 0 || py + dy < 0 || px + dx >= width || py + dy >= height) return false;
+            const hit = colorAt(pixels, width, px + dx, py + dy);
+            if (hit[0] !== color[0] || hit[1] !== color[1] || hit[2] !== color[2]) return false;
+          }
+        }
+      }
+    }
+  }
+  return true;
+}
+
+export function centeredTextIsPainted(png, text, { scale = 2, color = DIM, maxChars = 240 } = {}) {
+  const clean = sanitizeCardText(text, maxChars);
+  if (!clean || clean === 'BOT') return false;
+  const { width, height, pixels } = pngPixels(png);
+  const textWidth = clean.length * 6 * scale;
+  const x = Math.round((width - textWidth) / 2);
+  const glyphH = 7 * scale;
+  for (let y = 0; y <= height - glyphH; y++) {
+    if (centeredLineAt(pixels, width, height, clean, x, y, scale, color)) return true;
+  }
+  return false;
+}
+
+export function urlIsPainted(png, url) {
+  if (!url) return false;
+  const { width, height, pixels } = pngPixels(png);
+  const scale = 2;
+  const lines = burnedUrlLines(url, width, scale);
+  if (!lines.length) return false;
+  return lines.every((line) => {
+    const textWidth = line.length * 6 * scale;
+    const x = Math.round((width - textWidth) / 2);
+    const glyphH = 7 * scale;
+    for (let y = 0; y <= height - glyphH; y++) {
+      if (centeredLineAt(pixels, width, height, line, x, y, scale, DIM)) return true;
+    }
+    return false;
+  });
 }
