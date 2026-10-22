@@ -2,3 +2,4 @@ node_modules
 _tools
 *.zip
 .DS_Store
+apps/agentscore/data/
