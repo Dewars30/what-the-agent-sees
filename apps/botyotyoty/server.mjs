@@ -3,7 +3,8 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
-import { homeOgPng, matchOgPng, pairingOgPng, profileCardPng, profileOgPng } from './lib/cardpng.mjs';
+import { homeOgPng, matchOgPng, pairingOgPng, profileCardPng, profileOgPng, terminatedCardPng, terminatedOgPng } from './lib/cardpng.mjs';
+import { cardHeadline, dateText, ensureDate, scoreText } from './lib/date.mjs';
 import { moderateField } from './lib/moderate.mjs';
 import { allowedHostsFor, clientIp, originOf } from './lib/origin.mjs';
 import {
@@ -11,6 +12,7 @@ import {
   editPage,
   hiddenPage,
   homePage,
+  datePage,
   joinPage,
   keyPage,
   matchPage,
@@ -544,7 +546,8 @@ export async function createApp(existingStore) {
     if (from.dating_paused) return plain(c, 'Dating is paused. The card is waiting. Nothing was accepted.', 409);
     const next = await store.setPairingSide(loaded.pairing.id, side, 'accept');
     if (!bothAccepted(next)) return plain(c, 'Accepted. The card is still waiting on the other chaperone.');
-    return plain(c, 'Both accepted.');
+    const date = await ensureDate(store, next);
+    return plain(c, `Both accepted. Date: ${originOf(c)}/d/${date.id}`);
   });
 
   app.get('/pair/:id/og.png', async (c) => {
@@ -604,8 +607,56 @@ export async function createApp(existingStore) {
         ? plain(c, text, 404)
         : html(c, messagePage({ title: 'Waiting', statusText: text }), 404);
     }
-    return html(c, matchPage({ origin: originOf(c), ...loaded }));
+    const date = await store.getDateByPairing(loaded.pairing.id);
+    return html(c, matchPage({ origin: originOf(c), ...loaded, date }));
   });
+
+  app.get('/d/:id/og.png', async (c) => {
+    const loaded = await loadDate(c.req.param('id'));
+    if (!loaded) return plain(c, 'No date with that id.', 404);
+    const origin = originOf(c);
+    return png(c, terminatedOgPng(terminatedCard(loaded, `${origin}/d/${loaded.date.id}`)));
+  });
+
+  app.get('/d/:id/card.png', async (c) => {
+    const loaded = await loadDate(c.req.param('id'));
+    if (!loaded) return plain(c, 'No date with that id.', 404);
+    const origin = originOf(c);
+    return png(c, terminatedCardPng(terminatedCard(loaded, `${origin}/d/${loaded.date.id}`)));
+  });
+
+  app.get('/d/:id', async (c) => {
+    const loaded = await loadDate(c.req.param('id'));
+    if (!loaded) {
+      return c.req.query('format') === 'txt'
+        ? plain(c, 'No date with that id.', 404)
+        : html(c, messagePage({ title: 'No such date', statusText: 'No date with that id.' }), 404);
+    }
+    const origin = originOf(c);
+    if (c.req.query('format') === 'txt') return plain(c, dateText({ origin, ...loaded }));
+    return html(c, datePage({ origin, ...loaded }));
+  });
+
+  function terminatedCard(loaded, url) {
+    return {
+      a: loaded.a,
+      b: loaded.b,
+      headline: cardHeadline(loaded.date),
+      trust: scoreText(loaded.date.trust),
+      url,
+    };
+  }
+
+  async function loadDate(id) {
+    const date = await store.getDateById(id);
+    if (!date) return null;
+    const pairing = await store.getPairing(date.pairing_id);
+    if (!pairing) return null;
+    const a = await store.getBotById(pairing.bot_a_id);
+    const b = await store.getBotById(pairing.bot_b_id);
+    if (!a || !b) return null;
+    return { date, pairing, a, b };
+  }
 
   async function chaperoneSocial(loaded) {
     if (!loaded.bot || loaded.bot.status !== 'public') return { saves: [], swipes: [], pairings: [], pairingNames: new Map() };
@@ -649,7 +700,8 @@ export async function createApp(existingStore) {
     const next = await store.setPairingSide(pairing.id, side, action);
     if (action === 'pass') return { status: 200, text: 'Passed. No date starts.', pairing: next };
     if (!bothAccepted(next)) return { status: 200, text: 'Accepted. The card is still waiting on the other chaperone.', pairing: next };
-    return { status: 200, text: 'Both accepted.', pairing: next };
+    const date = await ensureDate(store, next);
+    return { status: 200, text: 'Both accepted.', pairing: next, date };
   }
 
   app.notFound((c) => {

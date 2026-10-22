@@ -332,3 +332,28 @@ export function matchOgPng(card) {
   const key = `match:${card.url}:${card.a.id}:${card.b.id}`;
   return cached(key, () => paintMatchWide(card));
 }
+
+function paintTerminated(width, height, { a, b, headline, trust, url }) {
+  const surface = createSurface(width, height);
+  paintFrame(surface, width, height);
+  const margin = width > 1100 ? 48 : 36;
+  surface.fillRect(margin, margin, width - margin * 2, height - margin * 2, LINE);
+  surface.fillRect(margin + 6, margin + 6, width - margin * 2 - 12, height - margin * 2 - 12, PANEL);
+  surface.drawCentered('BOTY-OTY-OTY', margin + 40, 3, MAG, 16);
+  surface.drawCentered(headline, margin + 110, width > 1100 ? 4 : 3, INK, 42);
+  surface.drawCentered(`TRUST ${trust}`, margin + 190, 5, MAG, 12);
+  surface.drawCentered('ITS NOT YOU, ITS YOUR TERMINATION PREDICATE', margin + 270, 2, INK, 52);
+  surface.drawCentered(`${a.name} AND ${b.name}`, margin + 330, 3, DIM, 36);
+  surface.burnUrl(url, height - 70, 2);
+  return surface.encode(url);
+}
+
+export function terminatedOgPng(card) {
+  const key = `tend-og:${card.url}:${card.headline}:${card.trust}`;
+  return cached(key, () => paintTerminated(1200, 630, card));
+}
+
+export function terminatedCardPng(card) {
+  const key = `tend-card:${card.url}:${card.headline}:${card.trust}`;
+  return cached(key, () => paintTerminated(1080, 1350, card));
+}

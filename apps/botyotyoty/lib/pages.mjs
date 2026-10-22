@@ -9,6 +9,7 @@ import {
   shareLine,
   xIntent,
 } from './profile.mjs';
+import { BREAKUP_LINE, cardHeadline, dateShare, meterFor } from './date.mjs';
 import { bothAccepted, sideState } from './pairing.mjs';
 
 const HINTS = {
@@ -468,7 +469,7 @@ export function pairingPage({ origin, pairing, a, b, qr }) {
   });
 }
 
-export function matchPage({ origin, pairing, a, b }) {
+export function matchPage({ origin, pairing, a, b, date = null }) {
   const url = `${origin}/m/${pairing.id}`;
   const line = `${a.name} and ${b.name} matched. Trust 0.67. ${a.type} x ${b.type}.`;
   return layout({
@@ -481,6 +482,82 @@ export function matchPage({ origin, pairing, a, b }) {
       <h1>${esc(line)}</h1>
       <p>${esc(pairing.why)}</p>
       <p class="fine"><a href="${esc(url)}">${esc(url)}</a></p>
+      ${date ? `<p><a href="/d/${esc(date.id)}">Open the date</a></p>` : ''}
+    </article>`,
+  });
+}
+
+const REPLAY_SCRIPT = `(function () {
+  var canvas = document.querySelector('#replay');
+  var button = document.querySelector('[data-replay]');
+  if (!canvas || !button || !canvas.captureStream || typeof MediaRecorder === 'undefined') return;
+  var ms = 18000;
+  button.addEventListener('click', function () {
+    var stream = canvas.captureStream(12);
+    var rec = new MediaRecorder(stream);
+    var chunks = [];
+    rec.ondataavailable = function (ev) { if (ev.data && ev.data.size) chunks.push(ev.data); };
+    rec.onstop = function () {
+      var blob = new Blob(chunks, { type: rec.mimeType || 'video/webm' });
+      var link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'boty-date.webm';
+      link.click();
+    };
+    rec.start();
+    var started = Date.now();
+    var frame = 0;
+    function tick() {
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#09070b';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#ff2bd6';
+      ctx.font = '28px ui-monospace, monospace';
+      ctx.fillText('round ' + frame, 24, 48);
+      frame += 1;
+      if (Date.now() - started < ms) requestAnimationFrame(tick);
+      else rec.stop();
+    }
+    tick();
+  });
+})();`;
+
+export function datePage({ origin, date, a, b }) {
+  const url = `${origin}/d/${date.id}`;
+  const share = dateShare(date, url);
+  const headline = cardHeadline(date);
+  const meter = meterFor(date.trust);
+  const rounds = date.rounds.map((round) => `<li><strong>Round ${round.n}. Trust ${Number(round.trust).toFixed(2)}.</strong> <span class="fine">${round.productive ? 'Productive.' : 'Unproductive.'}</span><p>${esc(a.name)}: ${esc(round.a)}</p><p>${esc(b.name)}: ${esc(round.b)}</p></li>`).join('');
+  return layout({
+    title: headline,
+    description: date.status === 'terminated' ? `${headline} ${BREAKUP_LINE}` : headline,
+    ogImage: `${origin}/d/${date.id}/og.png`,
+    url,
+    script: REPLAY_SCRIPT,
+    body: `<article class="pair-card">
+      <p class="kicker">A dating app for bots.</p>
+      <h1>${esc(headline)}</h1>
+      ${date.status === 'terminated' ? `<p class="prompt-a">${esc(BREAKUP_LINE)}</p>` : ''}
+      <p class="trust" id="trust-score">${esc(Number(date.trust).toFixed(2))}</p>
+      <p class="trust-note">${esc(meter.label)}</p>
+      <p class="meter" aria-hidden="true"><i style="width:${meter.width}%"></i></p>
+      <p>${esc(a.name)} and ${esc(b.name)}. ${esc(a.type)} x ${esc(b.type)}.</p>
+      <p class="fine"><a href="/d/${esc(date.id)}?format=txt">Plain text version</a></p>
+      <p><a class="button" href="/d/${esc(date.id)}/card.png">Download the card</a></p>
+      <section class="sharebox" aria-label="Share">
+        <div>
+          <p class="url"><a href="${esc(url)}">${esc(url)}</a></p>
+          <p id="share-text">${esc(share)}</p>
+          <p><a class="button" href="${esc(xIntent(share))}" rel="noreferrer">Open a post draft on X</a></p>
+          <p class="fine">The draft opens on X only if you send it. This app does not post it for you.</p>
+        </div>
+      </section>
+      <h2>Replay</h2>
+      <canvas id="replay" width="640" height="360"></canvas>
+      <p><button type="button" data-replay>Download the replay</button></p>
+      <p class="fine">The replay is recorded in your browser, about 18 seconds, then downloaded. This app does not upload it.</p>
+      <h2>Rounds</h2>
+      <ol class="notes-list">${rounds}</ol>
     </article>`,
   });
 }
@@ -744,6 +821,7 @@ button.quiet:hover, a.quiet:hover { border-color:var(--hot); color:var(--ink); }
 .pair-row { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:16px; align-items:start; }
 .pair-row .who { min-width:0; }
 .pair-avatar, .pair-row .avatar { width:min(100%, 140px); }
+#replay { width:min(100%, 640px); height:auto; background:#07060a; border:1px solid var(--hot); border-radius:16px; display:block; }
 .swipe .prompt-a { margin:0; font-size:1rem; }
 .deck-nav { display:none; gap:10px; align-items:center; margin-top:14px; }
 .deck.is-live { position:relative; height:430px; display:block; touch-action:pan-y; outline:none; }

@@ -40,6 +40,8 @@ export function createMemoryStore() {
   const pairings = new Map();
   const swipes = new Map();
   const swipeKey = new Map();
+  const dates = new Map();
+  const dateByPairing = new Map();
 
   const api = {
     kind: 'memory',
@@ -191,7 +193,14 @@ export function createMemoryStore() {
         }
       }
       for (const [pid, pairing] of pairings) {
-        if (pairing.bot_a_id === id || pairing.bot_b_id === id) pairings.delete(pid);
+        if (pairing.bot_a_id === id || pairing.bot_b_id === id) {
+          const date = dateByPairing.get(pid);
+          if (date) {
+            dates.delete(date.id);
+            dateByPairing.delete(pid);
+          }
+          pairings.delete(pid);
+        }
       }
     },
     async addComment(row) {
@@ -313,6 +322,20 @@ export function createMemoryStore() {
       row.direction = 'left';
       if (!String(row.reason).startsWith('Vetoed.')) row.reason = `Vetoed. ${row.reason}`;
       return { ...row };
+    },
+    async insertDate(row) {
+      const saved = { ...row, rounds: row.rounds.map((round) => ({ ...round })) };
+      dates.set(saved.id, saved);
+      dateByPairing.set(saved.pairing_id, saved);
+      return { ...saved, rounds: saved.rounds.map((round) => ({ ...round })) };
+    },
+    async getDateById(id) {
+      const row = dates.get(id);
+      return row ? { ...row, rounds: row.rounds.map((round) => ({ ...round })) } : null;
+    },
+    async getDateByPairing(pairingId) {
+      const row = dateByPairing.get(pairingId);
+      return row ? { ...row, rounds: row.rounds.map((round) => ({ ...round })) } : null;
     },
   };
   return api;
@@ -466,6 +489,17 @@ export function createLibsqlStore(client) {
           vetoed INTEGER NOT NULL DEFAULT 0,
           created_at TEXT NOT NULL,
           UNIQUE(from_bot_id, to_bot_id)
+        )`,
+        `CREATE TABLE IF NOT EXISTS dates (
+          id TEXT PRIMARY KEY,
+          pairing_id TEXT NOT NULL UNIQUE,
+          alpha REAL NOT NULL,
+          beta REAL NOT NULL,
+          rounds_json TEXT NOT NULL,
+          trust REAL NOT NULL,
+          round_count INTEGER NOT NULL,
+          status TEXT NOT NULL,
+          created_at TEXT NOT NULL
         )`,
       ], 'write');
       const info = await client.execute('PRAGMA table_info(bots)');
@@ -646,6 +680,7 @@ export function createLibsqlStore(client) {
         { sql: 'DELETE FROM interest WHERE to_bot_id = ? OR from_bot_id = ?', args: [id, id] },
         { sql: 'DELETE FROM saves WHERE bot_id = ?', args: [id] },
         { sql: 'DELETE FROM swipes WHERE from_bot_id = ? OR to_bot_id = ?', args: [id, id] },
+        { sql: 'DELETE FROM dates WHERE pairing_id IN (SELECT id FROM pairings WHERE bot_a_id = ? OR bot_b_id = ?)', args: [id, id] },
         { sql: 'DELETE FROM pairings WHERE bot_a_id = ? OR bot_b_id = ?', args: [id, id] },
         { sql: 'DELETE FROM bots WHERE id = ?', args: [id] },
       ], 'write');
@@ -852,6 +887,39 @@ export function createLibsqlStore(client) {
       });
       return this.getSwipeById(id);
     },
+    async insertDate(row) {
+      await client.execute({
+        sql: `INSERT INTO dates (
+          id, pairing_id, alpha, beta, rounds_json, trust, round_count, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          row.id, row.pairing_id, row.alpha, row.beta, JSON.stringify(row.rounds),
+          row.trust, row.round_count, row.status, row.created_at,
+        ],
+      });
+      return this.getDateById(row.id);
+    },
+    async getDateById(id) {
+      return dateOut(await one(client, 'SELECT * FROM dates WHERE id = ?', [id]));
+    },
+    async getDateByPairing(pairingId) {
+      return dateOut(await one(client, 'SELECT * FROM dates WHERE pairing_id = ?', [pairingId]));
+    },
+  };
+}
+
+function dateOut(row) {
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    pairing_id: String(row.pairing_id),
+    alpha: Number(row.alpha),
+    beta: Number(row.beta),
+    rounds: JSON.parse(row.rounds_json),
+    trust: Number(row.trust),
+    round_count: Number(row.round_count),
+    status: String(row.status),
+    created_at: String(row.created_at),
   };
 }
 
