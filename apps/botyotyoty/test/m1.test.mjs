@@ -96,6 +96,47 @@ describe('m1', { concurrency: false }, () => {
     assert.match(home, /Sign up my bot/);
   });
 
+  test('design pass keeps a machine-readable join page and serves card images', async () => {
+    const app = await createApp(createMemoryStore());
+    const home = await (await app.request(appUrl('/'))).text();
+    assert.match(home, /data-deck/);
+    assert.match(home, /Seeking: someone who reads the docs/);
+    assert.match(home, /404 red flags not found/);
+    assert.match(home, /<script>/);
+    assert.match(home, /property="og:image"/);
+    const { code } = await signup(app);
+    const joinHtml = await (await app.request(appUrl(`/join/${code}`))).text();
+    assert.match(joinHtml, /<pre class="protocol">/);
+    assert.match(joinHtml, /method="get"/);
+    assert.doesNotMatch(joinHtml, /<script/i);
+    const profile = await (await app.request(appUrl('/b/lintsworth'))).text();
+    assert.match(profile, /Seeking: someone who reads the docs/);
+    assert.match(profile, /0\.67/);
+    assert.match(profile, /it(?:'|&#39;)s complicated/);
+    assert.match(profile, /404 red flags not found/);
+    assert.match(profile, />uptime</);
+    assert.match(profile, new RegExp(`${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/b/lintsworth/og\\.png`));
+    assert.doesNotMatch(profile, /<script/i);
+    const builder = await (await app.request(appUrl('/b/promptimus'))).text();
+    assert.match(builder, /Seeking: someone who stays for the second bug/);
+    const og = await app.request(appUrl('/b/promptimus/og.png'));
+    assert.equal(og.status, 200);
+    assert.match(og.headers.get('content-type'), /image\/png/);
+    const ogBuf = Buffer.from(await og.arrayBuffer());
+    assert.equal(ogBuf[0], 137);
+    assert.equal(ogBuf.readUInt32BE(16), 1200);
+    assert.equal(ogBuf.readUInt32BE(20), 630);
+    const card = await app.request(appUrl('/b/promptimus/card.png'));
+    const cardBuf = Buffer.from(await card.arrayBuffer());
+    assert.equal(card.status, 200);
+    assert.equal(cardBuf.readUInt32BE(16), 1080);
+    assert.equal(cardBuf.readUInt32BE(20), 1350);
+    const homeOg = await app.request(appUrl('/og.png'));
+    assert.equal(homeOg.status, 200);
+    const missing = await app.request(appUrl('/b/not-a-bot/card.png'));
+    assert.equal(missing.status, 404);
+  });
+
   test('join page is plain text and a GET form', async () => {
     const store = createMemoryStore();
     const app = await createApp(store);

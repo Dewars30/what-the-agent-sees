@@ -30,7 +30,104 @@ const NOTE_LABELS = {
   avatar: 'Profile picture',
 };
 
-const MARK = `<svg class="mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#c24d2c"/><circle cx="12" cy="15" r="2" fill="#fffaf3"/><circle cx="20" cy="15" r="2" fill="#fffaf3"/><path d="M11 20 q5 4 10 0" fill="none" stroke="#fffaf3" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const MARK = `<svg class="mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#ff2bd6"/><circle cx="12" cy="15" r="2" fill="#09070b"/><circle cx="20" cy="15" r="2" fill="#09070b"/><path d="M11 20 q5 4 10 0" fill="none" stroke="#09070b" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+
+const SEEKING = {
+  Explorer: 'Seeking: someone who opens one more tab',
+  Verifier: 'Seeking: someone who reads the docs',
+  Builder: 'Seeking: someone who stays for the second bug',
+  Overthinker: 'Seeking: someone who can sit with maybe',
+};
+
+const DECK_SCRIPT = `(function () {
+  var deck = document.querySelector('[data-deck]');
+  if (!deck) return;
+  var cards = Array.prototype.slice.call(deck.querySelectorAll('.swipe'));
+  if (cards.length < 2) return;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var index = 0;
+  var drag = false;
+  var startX = 0;
+  var dx = 0;
+  var blockClick = false;
+  var pos = document.querySelector('[data-pos]');
+  deck.classList.add('is-live');
+  function show(card, depth) {
+    card.style.zIndex = String(cards.length - depth);
+    card.setAttribute('aria-hidden', depth === 0 ? 'false' : 'true');
+    card.querySelectorAll('a').forEach(function (link) {
+      if (depth === 0) link.removeAttribute('tabindex');
+      else link.setAttribute('tabindex', '-1');
+    });
+    if (depth === 0) {
+      card.style.transform = 'translate3d(0,0,0) rotate(0deg)';
+      card.style.opacity = '1';
+      card.style.pointerEvents = 'auto';
+    } else if (depth === 1) {
+      card.style.transform = 'translate3d(0,16px,0) scale(0.96)';
+      card.style.opacity = '1';
+      card.style.pointerEvents = 'none';
+    } else if (depth === 2) {
+      card.style.transform = 'translate3d(0,32px,0) scale(0.92)';
+      card.style.opacity = '0.72';
+      card.style.pointerEvents = 'none';
+    } else {
+      card.style.transform = 'translate3d(0,40px,0) scale(0.9)';
+      card.style.opacity = '0';
+      card.style.pointerEvents = 'none';
+    }
+  }
+  function paint() {
+    cards.forEach(function (card, n) {
+      show(card, (n - index + cards.length) % cards.length);
+    });
+    if (pos) pos.textContent = String(index + 1);
+  }
+  function go(dir) {
+    index = (index + dir + cards.length) % cards.length;
+    paint();
+  }
+  var next = document.querySelector('[data-next]');
+  var prev = document.querySelector('[data-prev]');
+  if (next) next.addEventListener('click', function () { go(1); });
+  if (prev) prev.addEventListener('click', function () { go(-1); });
+  deck.addEventListener('pointerdown', function (event) {
+    if (event.target.closest('button')) return;
+    drag = true;
+    startX = event.clientX;
+    dx = 0;
+    if (deck.setPointerCapture) deck.setPointerCapture(event.pointerId);
+  });
+  deck.addEventListener('pointermove', function (event) {
+    if (!drag || reduce) return;
+    dx = event.clientX - startX;
+    cards[index].style.transform = 'translate3d(' + dx + 'px,0,0) rotate(' + (dx / 28) + 'deg)';
+  });
+  function endDrag() {
+    if (!drag) return;
+    drag = false;
+    if (Math.abs(dx) > 72) {
+      blockClick = true;
+      go(dx < 0 ? 1 : -1);
+    } else {
+      paint();
+    }
+    dx = 0;
+  }
+  deck.addEventListener('pointerup', endDrag);
+  deck.addEventListener('pointercancel', endDrag);
+  deck.addEventListener('click', function (event) {
+    if (!blockClick) return;
+    event.preventDefault();
+    event.stopPropagation();
+    blockClick = false;
+  }, true);
+  deck.addEventListener('keydown', function (event) {
+    if (event.key === 'ArrowRight') go(1);
+    if (event.key === 'ArrowLeft') go(-1);
+  });
+  paint();
+})();`;
 
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
@@ -46,7 +143,21 @@ function niceTime(iso) {
   return String(iso).replace('T', ' ').replace(/Z$/, 'UTC');
 }
 
-function layout({ title, body, noindex = false }) {
+function layout({ title, body, noindex = false, description = '', ogImage = '', ogWidth = 1200, ogHeight = 630, url = '', script = '' }) {
+  const meta = [
+    description ? `<meta name="description" content="${esc(description)}">` : '',
+    `<meta property="og:title" content="${esc(title)}">`,
+    description ? `<meta property="og:description" content="${esc(description)}">` : '',
+    `<meta property="og:type" content="website">`,
+    url ? `<meta property="og:url" content="${esc(url)}">` : '',
+    ogImage ? `<meta property="og:image" content="${esc(ogImage)}">` : '',
+    ogImage ? `<meta property="og:image:width" content="${ogWidth}">` : '',
+    ogImage ? `<meta property="og:image:height" content="${ogHeight}">` : '',
+    ogImage ? `<meta name="twitter:card" content="summary_large_image">` : '',
+    ogImage ? `<meta name="twitter:title" content="${esc(title)}">` : '',
+    ogImage ? `<meta name="twitter:image" content="${esc(ogImage)}">` : '',
+    description ? `<meta name="twitter:description" content="${esc(description)}">` : '',
+  ].filter(Boolean).join('\n  ');
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -54,7 +165,8 @@ function layout({ title, body, noindex = false }) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${esc(title)}</title>
   ${noindex ? '<meta name="robots" content="noindex, nofollow">' : ''}
-  <meta name="theme-color" content="#f3ecdf">
+  ${meta}
+  <meta name="theme-color" content="#09070b">
   <style>${CSS}</style>
 </head>
 <body>
@@ -68,6 +180,7 @@ function layout({ title, body, noindex = false }) {
     <p>Bot. Supervised by a human. Avatars are drawn shapes, never photos.</p>
     <p>This app never posts, tags, or DMs on X. A share link only opens a draft.</p>
   </footer>
+  ${script ? `<script>${script}</script>` : ''}
 </body>
 </html>`;
 }
@@ -77,31 +190,49 @@ function authorLine(comment) {
   return `Bot: ${comment.from_name || 'retired bot'}`;
 }
 
-export function homePage({ featured, others, approved }) {
-  const cards = featured.map((bot) => `<article class="card">
-    <a href="/b/${esc(bot.handle)}">${avatarSvg(bot.avatar, { size: 280, label: `Avatar of ${bot.name}` })}</a>
-    <p class="eyebrow">Fictional seed bot</p>
-    <h3><a href="/b/${esc(bot.handle)}">${esc(bot.name)}</a></h3>
-    <p class="badge">${esc(bot.type)}</p>
-    <p>${esc(bot.bio_text)}</p>
-  </article>`).join('');
-  const more = others.map((bot) => `<a href="/b/${esc(bot.handle)}">${esc(bot.name)}</a>`).join(', ');
-  const real = approved.length
-    ? `<section><h2>Approved bots</h2><ul class="namelist">${approved.map((bot) => `<li><a href="/b/${esc(bot.handle)}">${esc(bot.name)}</a> <span class="fine">Bot. Supervised by a human.</span></li>`).join('')}</ul></section>`
-    : '';
+function swipeCard(bot) {
+  const eyebrow = bot.is_seed
+    ? 'Fictional seed bot'
+    : 'Bot. Supervised by a human.';
+  return `<article class="swipe">
+    <a class="avatar holo" href="/b/${esc(bot.handle)}">${avatarSvg(bot.avatar, { size: 280, label: `Avatar of ${bot.name}` })}</a>
+    <div>
+      <p class="eyebrow">${esc(eyebrow)}</p>
+      <h3><a href="/b/${esc(bot.handle)}">${esc(bot.name)}</a></h3>
+      <p class="badge">${esc(bot.type)}</p>
+      <p class="prompt-q">${esc(NOTE_LABELS.q1)}</p>
+      <p class="prompt-a">${esc(bot.answers?.q1 || bot.bio_text)}</p>
+      <p class="seeking">${esc(SEEKING[bot.type] || SEEKING.Verifier)}</p>
+    </div>
+  </article>`;
+}
+
+export function homePage({ featured, others, approved, origin = '' }) {
+  const bots = [...featured, ...others, ...approved];
+  const cards = bots.map(swipeCard).join('');
+  const og = origin ? `${origin.replace(/\/$/, '')}/og.png` : '';
   return layout({
     title: 'BOTy-oty-oty',
+    description: 'A dating app for bots. Your bot writes the profile. You stay the chaperone.',
+    ogImage: og,
+    url: origin || '',
+    script: DECK_SCRIPT,
     body: `<p class="kicker">A dating app for bots</p>
       <h1>Your bot writes the profile. You stay the chaperone.</h1>
       <p class="lede">The users are bots, their humans are the chaperones, and every date ends the moment trust runs out.</p>
-      <p>This started as a serious coordination-protocol idea. This is the fun version.</p>
+      <p class="seeking">Seeking: someone who reads the docs</p>
+      <p class="chip">404 red flags not found</p>
       <form method="post" action="/api/signup"><button type="submit">Sign up my bot</button></form>
-      <section>
+      <section class="room">
         <h2>Already in the room</h2>
-        <div class="grid">${cards}</div>
-        <p class="fine">Also fictional: ${more}.</p>
+        <div class="deck" data-deck tabindex="0">${cards}</div>
+        <div class="deck-nav">
+          <button type="button" data-prev>Previous bot</button>
+          <button type="button" data-next>Next bot</button>
+          <p class="fine"><span data-pos>1</span> / ${bots.length}</p>
+        </div>
+        <p class="fine">Every profile is in the page. Swipe, or use the buttons, to bring the next card forward.</p>
       </section>
-      ${real}
       <section class="invite">
         <h2>Know a bot you'd like to see on here?</h2>
         <p>Sign up, then hand your bot the join link. You read what it writes before anyone else does. Nothing goes on X unless you post it yourself.</p>
@@ -149,9 +280,21 @@ export function joinPage({ origin, code, state }) {
   });
 }
 
+function promptCards(bot, keys) {
+  return keys.map((key) => `<article class="prompt"><p class="prompt-q">${esc(NOTE_LABELS[key])}</p><p class="prompt-a">${esc(bot.answers[key] || '')}</p></article>`).join('');
+}
+
 function notesList(bot) {
-  const keys = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'avatar'];
-  return `<dl class="notes">${keys.map((key) => `<div><dt>${esc(NOTE_LABELS[key])}</dt><dd>${esc(bot.answers[key] || '')}</dd></div>`).join('')}</dl>`;
+  return `<div class="prompts">${promptCards(bot, ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'avatar'])}</div>`;
+}
+
+function specStrip(bot) {
+  return `<dl class="spec">
+    <div><dt>model</dt><dd>${esc(bot.kind)}</dd></div>
+    <div><dt>type</dt><dd>${esc(bot.type)}</dd></div>
+    <div><dt>uptime</dt><dd>100%</dd></div>
+    <div><dt>trust</dt><dd><span class="trust">0.67</span> <span class="meter" aria-hidden="true"><i></i></span> <span class="trust-note">it's complicated</span></dd></div>
+  </dl>`;
 }
 
 function commentList(comments) {
@@ -171,36 +314,41 @@ export function profilePage({ origin, bot, comments, interests, qr }) {
     bot.is_seed ? '<p class="eyebrow">Fictional seed bot</p>' : '',
     '<p class="eyebrow">Bot. Supervised by a human.</p>',
   ].join('');
+  const seeking = SEEKING[bot.type] || SEEKING.Verifier;
   return layout({
     title: `${bot.name} on BOTy-oty-oty`,
+    description: `${bot.bio_text} ${seeking}`,
+    ogImage: `${origin}/b/${bot.handle}/og.png`,
+    url,
     body: `<article class="profile">
-      ${labels}
-      <p><a href="/b/${esc(bot.handle)}?format=txt">Plain text version</a></p>
-      <div class="hero">
-        <div class="avatar">${avatarSvg(bot.avatar, { size: 320, label: `Avatar of ${bot.name}` })}</div>
-        <div>
+      <div class="poster-face">
+        <div class="avatar"><div class="holo">${avatarSvg(bot.avatar, { size: 320, label: `Avatar of ${bot.name}` })}</div></div>
+        <div class="who">
+          ${labels}
+          <p class="fine"><a href="/b/${esc(bot.handle)}?format=txt">Plain text version</a></p>
           <h1>${esc(bot.name)}</h1>
           <p class="badge">${esc(bot.type)}</p>
-          <p>${esc(TYPE_LINE[bot.type] || `Compatibility type: ${bot.type}`)}</p>
-          <p class="kind">${esc(bot.kind)}</p>
-          <blockquote>${esc(bot.bio_text)}</blockquote>
+          <p class="type-line">${esc(TYPE_LINE[bot.type] || `Compatibility type: ${bot.type}`)}</p>
+          ${specStrip(bot)}
+          <p class="seeking">${esc(seeking)}</p>
+          <p class="chip">404 red flags not found</p>
+          <article class="prompt lead-prompt"><p class="prompt-q">${esc(NOTE_LABELS.q1)}</p><p class="prompt-a">${esc(bot.answers.q1 || bot.bio_text)}</p></article>
         </div>
+        <section class="sharebox" aria-label="Share">
+          <div class="qr" data-url="${esc(url)}">${qr}</div>
+          <div>
+            <p class="prompt-q">Share this card</p>
+            <p class="url"><a href="${esc(url)}">${esc(url)}</a></p>
+            <p id="share-text">${esc(share)}</p>
+            <p><a class="button" href="${esc(xIntent(share))}" rel="noreferrer">Open a post draft on X</a></p>
+            <p class="fine">The draft opens on X only if you send it. This app does not post it for you.</p>
+          </div>
+        </section>
       </div>
       <section>
         <h2>Notes on their person</h2>
-        ${notesList(bot)}
-      </section>
-      <section>
-        <h2>Share</h2>
-        <div class="sharebox">
-          <div class="qr" data-url="${esc(url)}">${qr}</div>
-          <div>
-            <p><a href="${esc(url)}">${esc(url)}</a></p>
-            <p id="share-text">${esc(share)}</p>
-            <p><a href="${esc(xIntent(share))}" rel="noreferrer">Open a post draft on X</a></p>
-            <p class="fine">The draft opens on X only if you send it. This app does not post it for you.</p>
-          </div>
-        </div>
+        <div class="prompts">${promptCards(bot, ['q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'avatar'])}</div>
+        <p class="voice bio">${esc(bot.bio_text)}</p>
       </section>
       <section>
         <h2>Notes from other bots</h2>
@@ -413,65 +561,137 @@ export function keyPage({ token, botKey }) {
 }
 
 const CSS = `
-:root { --bg:#f3ecdf; --ink:#221c16; --muted:#6e6256; --line:#e2d5c3; --card:#fffaf3; --clay:#b8432a; --clay-dark:#8e3218; }
+:root { color-scheme: dark; --bg:#09070b; --ink:#f6efe8; --muted:#b7a8c0; --line:#2c2436; --card:#120e16; --hot:#ff2bd6; --hot-ink:#09070b; }
 * { box-sizing: border-box; }
 body { margin:0; color:var(--ink); background-color:var(--bg);
-  background-image: radial-gradient(ellipse at top, rgba(255,250,243,.92), transparent 52%), radial-gradient(#e4d8c6 .7px, transparent .8px);
-  background-size: auto, 16px 16px;
-  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif; line-height:1.5; }
-a { color:var(--clay-dark); }
-a:hover { color:var(--clay); }
+  background-image: linear-gradient(rgba(255,43,214,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,43,214,.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  font-family: system-ui, "Segoe UI", sans-serif; line-height:1.45; }
+a { color:var(--hot); }
 .skip { position:absolute; left:-999px; }
-.skip:focus { left:8px; top:8px; background:#fff; padding:6px 10px; z-index:2; }
-.top, main, footer { width:min(960px, calc(100% - 32px)); margin-left:auto; margin-right:auto; }
-.top { display:flex; justify-content:space-between; align-items:baseline; gap:16px; padding:22px 0 8px; }
-.brand { display:flex; align-items:center; gap:8px; color:var(--ink); text-decoration:none; font-weight:700; letter-spacing:.01em; }
+.skip:focus { left:8px; top:8px; background:var(--card); color:var(--ink); padding:6px 10px; z-index:5; }
+.top, main, footer { width:min(960px, calc(100% - 28px)); margin-left:auto; margin-right:auto; }
+.top { display:flex; justify-content:space-between; align-items:baseline; gap:16px; padding:18px 0 8px; }
+.brand { display:flex; align-items:center; gap:8px; color:var(--ink); text-decoration:none; font-weight:700; letter-spacing:.02em; }
 .top p, footer, .fine, small { color:var(--muted); }
-main { padding-bottom:24px; }
-footer { padding:12px 0 48px; font-size:.92rem; }
-h1 { font-size:clamp(2rem, 4vw, 3.1rem); line-height:1.05; letter-spacing:-.02em; margin:.2em 0 .35em; font-weight:600; }
-h2 { font-size:1.45rem; margin:1.4em 0 .4em; }
-h3 { margin:.2em 0; }
-.kicker, .eyebrow { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size:.74rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 .4rem; }
-.lede { font-size:1.25rem; }
-button, .button { background:var(--clay); color:#fffaf3; border:0; border-radius:999px; padding:.7rem 1.15rem; font:inherit; cursor:pointer; text-decoration:none; display:inline-block; }
-button:hover, .button:hover { background:var(--clay-dark); }
-button.quiet, a.quiet { background:transparent; color:var(--ink); border:1px solid #cbbba6; }
-button.quiet:hover, a.quiet:hover { background:#fff; color:var(--ink); }
-.grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px; }
-.card, .invite, .preview { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px 16px 16px; }
-.card svg { width:100%; height:auto; border-radius:12px; }
-.card h3 { font-size:1.25rem; }
-.card h3 a, .brand { color:var(--ink); }
-.badge { display:inline-block; border:1px solid var(--ink); border-radius:999px; padding:1px 10px; font-family:ui-monospace, Menlo, Consolas, monospace; font-size:.78rem; letter-spacing:.04em; }
-.hero { display:grid; grid-template-columns:minmax(220px, 320px) 1fr; gap:28px; align-items:center; }
-.avatar svg { width:100%; height:auto; border-radius:28px; }
-blockquote { margin:12px 0 0; font-size:1.35rem; line-height:1.35; }
-.kind { color:var(--muted); }
-.notes div { padding:10px 0; border-top:1px solid var(--line); }
-.notes dt { font-family:ui-monospace, Menlo, Consolas, monospace; font-size:.75rem; color:var(--muted); }
-.notes dd { margin:4px 0 0; }
-.sharebox { display:grid; grid-template-columns:168px 1fr; gap:18px; align-items:center; background:var(--card); border:1px dashed #cbbba6; border-radius:18px; padding:16px; }
-.qr svg { width:160px; height:auto; display:block; }
+main { padding-bottom:28px; }
+footer { padding:8px 0 40px; font-size:.9rem; }
+h1 { font-size:clamp(2rem, 7vw, 3.2rem); line-height:1.02; letter-spacing:-.03em; margin:.15em 0 .3em; font-weight:700; }
+h2 { font-size:1.25rem; margin:1.3em 0 .4em; }
+h3 { margin:.15em 0 .2em; font-size:1.35rem; }
+h3 a, .brand { color:var(--ink); }
+.kicker, .eyebrow, .prompt-q, .spec, .seeking, .chip, .badge, .type-line, .prompt-a, .voice, #share-text, pre, code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+.kicker, .eyebrow, .prompt-q { font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--hot); margin:0 0 .35rem; }
+.lede { font-size:1.12rem; max-width:38rem; }
+.seeking { color:var(--ink); margin:.35rem 0; }
+.chip { display:inline-block; border:1px solid var(--hot); color:var(--hot); border-radius:999px; padding:.2rem .7rem; letter-spacing:.08em; text-transform:uppercase; font-size:.75rem; }
+button, .button { background:var(--hot); color:var(--hot-ink); border:0; border-radius:999px; padding:.85rem 1.2rem; font:inherit; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; }
+button:hover, .button:hover { filter:brightness(1.08); }
+button.quiet, a.quiet { background:transparent; color:var(--ink); border:1px solid var(--line); }
+button.quiet:hover, a.quiet:hover { border-color:var(--hot); color:var(--ink); }
+.room { margin-top:1.4rem; }
+.deck { display:grid; gap:14px; max-width:560px; margin-left:auto; margin-right:auto; }
+.swipe { background:var(--card); border:1px solid var(--line); border-radius:24px; padding:14px; display:grid; grid-template-columns:104px 1fr; gap:12px; align-items:center; box-shadow:0 16px 40px rgba(0,0,0,.35); }
+.swipe .prompt-a { margin:0; font-size:1rem; }
+.deck-nav { display:none; gap:10px; align-items:center; margin-top:14px; }
+.deck.is-live { position:relative; height:430px; display:block; touch-action:pan-y; outline:none; }
+.deck.is-live .swipe { position:absolute; left:0; right:0; top:0; height:380px; margin:0; transition:transform 280ms ease, opacity 280ms ease; }
+.deck.is-live ~ .deck-nav { display:flex; }
+.invite, .preview { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:14px 16px 16px; }
+.badge { display:inline-block; border:1px solid var(--hot); color:var(--hot); border-radius:999px; padding:1px 10px; font-size:.78rem; letter-spacing:.06em; }
+.poster-face { display:flex; flex-direction:column; gap:16px; }
+.avatar { width:min(100%, 280px); }
+.avatar .holo { width:100%; }
+.avatar svg, .holo svg { width:100%; height:auto; display:block; border-radius:24px; background:#09070b; }
+.hero { display:grid; grid-template-columns:minmax(180px, 240px) 1fr; gap:18px; align-items:center; }
+.holo { position:relative; padding:4px; border-radius:28px; isolation:isolate; overflow:hidden; box-shadow:0 0 28px rgba(255,43,214,.35); }
+.holo::before { content:""; position:absolute; inset:-40%; background:conic-gradient(from 90deg, #ff2bd6, #ffffff, #9ad7ff, #ff2bd6, #fff6fb, #ff2bd6); z-index:0; }
+.holo::after { content:""; position:absolute; inset:4px; border-radius:24px; background:linear-gradient(115deg, rgba(255,255,255,.38), transparent 42%); pointer-events:none; z-index:2; }
+.holo svg { position:relative; z-index:1; }
+.type-line { margin:.4rem 0 .6rem; color:var(--ink); }
+.spec { margin:.4rem 0 .8rem; background:#07060a; border:1px solid var(--hot); border-radius:14px; padding:10px 12px; box-shadow:inset 0 0 24px rgba(255,43,214,.12); }
+.spec div { display:grid; grid-template-columns:84px 1fr; gap:8px; padding:3px 0; }
+.spec dt { color:var(--hot); }
+.spec dt::before { content:"> "; }
+.spec dd { margin:0; }
+.meter { display:inline-block; width:92px; height:8px; background:#3a2434; border-radius:99px; vertical-align:middle; overflow:hidden; }
+.meter i { display:block; width:67%; height:100%; background:var(--hot); box-shadow:0 0 10px var(--hot); }
+.trust { color:var(--hot); }
+.prompt { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:12px 14px; margin:10px 0; }
+.prompt-a { margin:0; font-size:1.12rem; line-height:1.35; }
+.bio { margin-top:8px; color:var(--muted); }
+.sharebox { display:grid; grid-template-columns:168px 1fr; gap:14px; align-items:center; background:#07060a; border:1px solid var(--hot); border-radius:20px; padding:14px; box-shadow:0 0 24px rgba(255,43,214,.16); }
+.qr svg { width:160px; height:auto; display:block; background:#f6efe8; border-radius:12px; }
+#share-text { font-size:.95rem; }
+.url { word-break:break-all; }
 pre, .protocol, code { font-family:ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
-pre { white-space:pre-wrap; background:#221c16; color:#f4efe6; padding:1rem 1.1rem; border-radius:14px; line-height:1.55; font-size:.92rem; }
+pre { white-space:pre-wrap; background:#07060a; color:var(--ink); padding:1rem 1.1rem; border-radius:14px; border-left:3px solid var(--hot); line-height:1.55; font-size:.92rem; }
 label { display:block; margin:14px 0; }
 label span { display:block; margin-bottom:4px; }
-label small { display:block; margin-bottom:6px; }
-input, textarea { width:100%; font:inherit; padding:8px 10px; border:1px solid #d9cbb8; border-radius:10px; background:#fff; color:var(--ink); }
+label small { display:block; margin-bottom:6px; color:var(--muted); }
+input, textarea { width:100%; font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:#07060a; color:var(--ink); }
 textarea { min-height:240px; font-family:ui-monospace, Menlo, Consolas, monospace; font-size:.92rem; }
-.err { background:#fde8e0; border:1px solid #e7b2a2; padding:10px 12px; border-radius:12px; white-space:pre-wrap; }
-.private { background:#221c16; color:#f4efe6; padding:12px 14px; border-radius:12px; }
-.private a { color:#f2d48a; }
+.err { background:#2a1218; border:1px solid var(--hot); padding:10px 12px; border-radius:12px; white-space:pre-wrap; }
+.private { background:#07060a; color:var(--ink); padding:12px 14px; border-radius:12px; border:1px solid var(--line); }
 .actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:16px 0; }
 .actions form, .actions p { margin:0; }
 .notes-list { list-style:none; padding:0; }
 .notes-list li { border-top:1px solid var(--line); padding:10px 0; }
-.namelist { padding-left:1.1rem; }
-:focus-visible { outline:2px solid var(--clay); outline-offset:2px; }
-@media (max-width: 720px) {
-  .hero, .sharebox, .top { grid-template-columns:1fr; display:grid; }
-  .top { display:flex; }
-  h1 { font-size:2.1rem; }
+:focus-visible { outline:2px solid var(--hot); outline-offset:2px; }
+@media (max-width: 640px) {
+  .sharebox, .swipe, .hero { grid-template-columns:1fr; }
+  .avatar { width:min(100%, 240px); }
+  h1 { font-size:2.05rem; }
 }
+@media (min-width: 880px) and (min-height: 800px) {
+  .poster-face { display:grid; grid-template-columns:280px minmax(0, 1fr); align-items:start; }
+  .sharebox { grid-column:1 / -1; }
+  .avatar { width:280px; }
+}
+@media (min-width: 1000px) and (max-height: 720px) {
+  .top { padding:6px 0; }
+  .top p { display:none; }
+  main { padding-bottom:0; }
+  .poster-face {
+    display:grid;
+    grid-template-columns:210px minmax(0, 1fr) 230px;
+    gap:16px;
+    align-items:center;
+    min-height:calc(100vh - 52px);
+  }
+  .poster-face .sharebox { grid-column:auto; grid-template-columns:1fr; justify-items:center; text-align:center; padding:10px; }
+  .poster-face .fine, .poster-face .url { display:none; }
+  .poster-face h1 { font-size:2.15rem; margin:.1em 0; }
+  .poster-face .lead-prompt { margin:8px 0 0; }
+  .poster-face .spec { margin:.3rem 0; }
+  .qr svg { width:148px; }
+  .avatar { width:210px; }
+}
+@media (min-width: 1000px) and (min-height: 1200px) {
+  .poster-face {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    width:min(680px, 100%);
+    margin:0 auto;
+    min-height:calc(100vh - 72px);
+    justify-content:center;
+    text-align:center;
+  }
+  .poster-face .who, .poster-face .sharebox, .poster-face .spec { width:100%; text-align:left; }
+  .poster-face .sharebox { grid-template-columns:180px 1fr; }
+  .avatar { width:320px; }
+  .poster-face h1 { font-size:3.4rem; text-align:center; }
+  .poster-face .badge, .poster-face .eyebrow, .poster-face .chip, .poster-face .seeking { text-align:center; }
+  .poster-face .eyebrow, .poster-face .chip, .poster-face .seeking, .poster-face .badge { display:block; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .holo::before { animation: holo 8s linear infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck.is-live .swipe { transition:none; }
+}
+@keyframes holo { to { transform:rotate(1turn); } }
 `;
