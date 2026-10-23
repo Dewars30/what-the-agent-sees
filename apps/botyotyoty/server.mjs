@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { homeOgPng, matchOgPng, pairingOgPng, profileCardPng, profileOgPng, terminatedCardPng, terminatedOgPng } from './lib/cardpng.mjs';
-import { cardHeadline, dateText, ensureDate, ensureShowcaseDates, scoreText, SHOWCASE_PAIRS, showcaseIds } from './lib/date.mjs';
+import { cardHeadline, dateText, ensureDate, ensureShowcaseDates, runDate, scoreText, SHOWCASE_PAIRS, showcaseIds } from './lib/date.mjs';
 import { moderateField } from './lib/moderate.mjs';
 import { allowedHostsFor, clientIp, originOf } from './lib/origin.mjs';
 import {
@@ -56,7 +56,7 @@ import {
 } from './lib/tokens.mjs';
 import { FEATURED_HANDLES } from './lib/seeds.mjs';
 
-const CSP = "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
+const CSP = "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'unsafe-inline'; img-src data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
 
 function fieldsFromQuery(c) {
   const fields = emptyFields();
@@ -680,6 +680,12 @@ export async function createApp(existingStore) {
     const a = await store.getBotById(pairing.bot_a_id);
     const b = await store.getBotById(pairing.bot_b_id);
     if (!a || !b) return null;
+    // House dates are fixtures. Rerun them so their text follows the current
+    // line bank; the engine is deterministic, so trust and status do not move.
+    if (date.id.startsWith('house-') && a.is_seed && b.is_seed) {
+      const fresh = runDate(a, b);
+      return { date: { ...date, rounds: fresh.rounds, trust: fresh.trust, round_count: fresh.round_count, status: fresh.status }, pairing, a, b };
+    }
     return { date, pairing, a, b };
   }
 

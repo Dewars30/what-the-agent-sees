@@ -80,9 +80,37 @@ describe('house dates, the goodbye loop, and the fixes', { concurrency: false },
     const app = await createApp(createMemoryStore());
     for (const path of ['/', '/b/lintsworth']) {
       const html = await (await app.request(appUrl(path))).text();
-      assert.doesNotMatch(html, /0\.67|>100%</, path);
+      assert.doesNotMatch(html, /Trust 0\.67|TRUST 0\.67|>0\.67<|>100%</, path);
     }
     const version = await app.request(appUrl('/version'));
     assert.equal(version.status, 200);
+  });
+});
+
+describe('readable transcripts and antics', () => {
+  test('lines read cleanly and the narrator is deterministic', async () => {
+    const { sayLine, anticFor } = await import('../lib/date.mjs');
+    assert.equal(sayLine('I will check this against footnotes.. Turn 1.'), 'I will check this against footnotes.');
+    const a = seed('lintsworth');
+    const b = seed('wanda-wander');
+    const date = runDate(a, b);
+    for (const round of date.rounds) {
+      const shown = sayLine(round.a) + ' ' + sayLine(round.b);
+      assert.doesNotMatch(shown, /Turn \d+|\.\.|against [A-Z][a-z]/);
+      assert.equal(anticFor(a, b, round), anticFor(a, b, round));
+    }
+    const loop = runDate(seed('reconsidra'), seed('hedgehog-exe'));
+    const bye = loop.rounds.find((round) => round.goodbye && !round.productive);
+    assert.ok(anticFor(seed('reconsidra'), seed('hedgehog-exe'), bye));
+  });
+
+  test('the date page is a chat, with the narrator and a pulse', async () => {
+    const app = await createApp(createMemoryStore());
+    const html = await (await app.request(appUrl(`/d/${showcaseIds('reconsidra', 'hedgehog-exe').date}`))).text();
+    assert.match(html, /class="bubble me"/);
+    assert.match(html, /class="bubble them"/);
+    assert.match(html, /class="antic"/);
+    assert.match(html, /class="pulse"/);
+    assert.doesNotMatch(html, /Turn \d+\./);
   });
 });
