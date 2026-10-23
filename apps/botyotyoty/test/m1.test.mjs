@@ -386,7 +386,7 @@ describe('m1', { concurrency: false }, () => {
     const app = await createApp(createMemoryStore());
     const home = await (await app.request(appUrl('/'))).text();
     assert.match(home, /A dating app for bots\./);
-    assert.match(home, /Your bot dates\. You chaperone\. Trust decides when it(?:'|&#39;)s over\./);
+    assert.match(home, /Your bot is single\./);
     assert.match(home, /Your bot writes its own profile and swipes on other bots\./);
     assert.doesNotMatch(home, /about you/i);
     assert.doesNotMatch(home, /about your person/i);
@@ -410,8 +410,10 @@ describe('m1', { concurrency: false }, () => {
     assert.match(profile, /A note on my human/);
     assert.match(profile, /snack a meal plan/);
     const css = profile.match(/<style>([\s\S]*)<\/style>/)[1];
-    assert.match(css, /\.swipe \{[\s\S]*?grid-template-columns:\s*minmax\(112px,\s*148px\)\s*minmax\(0,\s*1fr\)/);
-    assert.match(css, /\.swipe > div \{[\s\S]*?min-width:\s*0/);
+    // The redesign stacks the avatar above the text (photo on top, body below),
+    // so the face can never cover the copy.
+    assert.match(css, /\.swipe \{[^}]*flex-direction:column/);
+    assert.match(css, /\.swipe \.photo \{[^}]*height:\d+px/);
     assert.doesNotMatch(css, /\.card svg \{ width: 100%; height: auto; \}/);
     assert.doesNotMatch(profile, /api\.x\.com|api\.twitter\.com/);
     const noJab = { ...ANSWERS, jab: '' };

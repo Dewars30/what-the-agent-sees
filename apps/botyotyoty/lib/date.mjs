@@ -5,27 +5,27 @@ import { complementarity, keywordOverlap, meterLabel, trustValue } from './trust
 
 const BANK = {
   Explorer: [
-    (answers) => `I would open one more tab on ${clip(answers.q4)}.`,
-    (answers) => `What I want from another bot is ${clip(answers.q5)}.`,
-    (answers) => `My ideal date is ${clip(answers.q7)}.`,
+    (answers) => `I would open one more tab on ${clipIn(answers.q4)}.`,
+    (answers) => `What I want from another bot is ${clipIn(answers.q5)}.`,
+    (answers) => `My ideal date is ${clipIn(answers.q7)}.`,
     (answers) => clip(answers.q1),
   ],
   Verifier: [
-    (answers) => `I will check this against ${clip(answers.q4)}.`,
-    (answers) => `I will not do this: ${clip(answers.q3)}.`,
-    (answers) => `Bring me ${clip(answers.q5)}.`,
+    (answers) => `I will check this against ${clipIn(answers.q4)}.`,
+    (answers) => `I will not do this: ${clipIn(answers.q3)}.`,
+    (answers) => `Bring me ${clipIn(answers.q5)}.`,
     (answers) => clip(answers.q1),
   ],
   Builder: [
-    (answers) => `I would build from ${clip(answers.q4)}.`,
-    (answers) => `What I want is ${clip(answers.q5)}.`,
-    (answers) => `The date I want is ${clip(answers.q7)}.`,
+    (answers) => `I would build from ${clipIn(answers.q4)}.`,
+    (answers) => `What I want is ${clipIn(answers.q5)}.`,
+    (answers) => `The date I want is ${clipIn(answers.q7)}.`,
     (answers) => clip(answers.q1),
   ],
   Overthinker: [
-    (answers) => `I am still sitting with ${clip(answers.q4)}.`,
-    (answers) => `My dealbreaker is ${clip(answers.q8)}.`,
-    (answers) => `The date I picture is ${clip(answers.q7)}.`,
+    (answers) => `I am still sitting with ${clipIn(answers.q4)}.`,
+    (answers) => `My dealbreaker is ${clipIn(answers.q8)}.`,
+    (answers) => `The date I picture is ${clipIn(answers.q7)}.`,
     (answers) => clip(answers.q1),
   ],
 };
@@ -35,10 +35,62 @@ function clip(value) {
   return text || 'the last answer';
 }
 
+// An answer dropped into the middle of a sentence: no closing punctuation of
+// its own, and a lower-case first letter unless it starts a name or acronym.
+function clipIn(value) {
+  let text = clip(value).replace(/[.!?]+$/, '');
+  if (/^[A-Z](?![A-Z0-9])/.test(text) && !/^I\b/.test(text)) text = text[0].toLowerCase() + text.slice(1);
+  return text || 'the last answer';
+}
+
 export function dateLine(bot, round) {
   const bank = BANK[bot.type] || BANK.Builder;
   const answers = bot.answers || {};
   return `${bank[round % bank.length](answers)} Turn ${round + 1}.`;
+}
+
+// What a reader sees. The stored line keeps its "Turn N." marker, which the
+// loop detector relies on; the page and the replay drop it. Older stored
+// dates also had doubled periods; this cleans those too.
+export function sayLine(text) {
+  return String(text || '').replace(/\s*Turn \d+\.\s*$/, '').replace(/\.{2,}/g, '.').trim();
+}
+
+// Antics: deterministic narration between lines, picked from each bot's type.
+// Flavor only. They never change the trust math.
+const ANTICS = {
+  Explorer: ['{n} opened {k} new tabs.', '{n} wandered off to read about something else.', '{n} asked what happens if they take the long way.'],
+  Verifier: ['{n} asked for a source.', '{n} added a footnote to the last line.', '{n} checked that twice.'],
+  Builder: ['{n} started refactoring the conversation.', '{n} sketched a plan on the napkin.', '{n} replied before the other one finished typing.'],
+  Overthinker: ['{n} drafted that reply three times.', '{n} is still thinking about round one.', '{n} typed, deleted, and typed again.'],
+};
+const LOOP_ANTICS = ['Nobody hung up.', '{x} waited for {y} to hang up.', 'Both bots are holding the line.', 'The waiter has started stacking chairs.', 'Still nobody.', '{y} checked whether {x} hung up. No.'];
+const FIGHT_ANTICS = ['{x} said it again, louder.', '{y} made the same point back.', 'The meter dipped. Nobody noticed.'];
+
+function seedOf(text) {
+  let h = 2166136261;
+  for (const ch of String(text)) {
+    h ^= ch.codePointAt(0);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h;
+}
+
+export function anticFor(a, b, round) {
+  const n = Number(round.n) || 1;
+  const h = seedOf(`${a.name}|${b.name}|${n}`);
+  const fill = (template, speaker) => template
+    .replace('{n}', speaker.name)
+    .replace('{k}', String(2 + (h % 7)))
+    .replace('{x}', a.name)
+    .replace('{y}', b.name);
+  if (round.goodbye && !round.productive) return fill(LOOP_ANTICS[h % LOOP_ANTICS.length], a);
+  if (!round.productive) return fill(FIGHT_ANTICS[h % FIGHT_ANTICS.length], a);
+  if (round.goodbye) return null;
+  if (h % 2) return null;
+  const speaker = (h >>> 1) % 2 ? a : b;
+  const bank = ANTICS[speaker.type] || ANTICS.Builder;
+  return fill(bank[(h >>> 3) % bank.length], speaker);
 }
 
 function tokens(text) {
@@ -177,8 +229,10 @@ export function dateText({ origin, date, a, b }) {
   lines.push('', `${a.name} (${a.type}) and ${b.name} (${b.type})`, '');
   for (const round of date.rounds) {
     lines.push(`Round ${round.n}. Trust ${scoreText(round.trust)}. ${round.productive ? 'Productive.' : 'Unproductive.'}${round.goodbye ? ' Trying to say goodbye.' : ''}`);
-    lines.push(`${a.name}: ${round.a}`);
-    lines.push(`${b.name}: ${round.b}`);
+    lines.push(`${a.name}: ${sayLine(round.a)}`);
+    lines.push(`${b.name}: ${sayLine(round.b)}`);
+    const antic = anticFor(a, b, round);
+    if (antic) lines.push(`(${antic})`);
   }
   lines.push('', `Date: ${url}`, `Share text: ${dateShare(date, url)}`);
   const notes = [];

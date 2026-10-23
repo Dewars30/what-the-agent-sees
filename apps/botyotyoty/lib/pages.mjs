@@ -9,7 +9,7 @@ import {
   shareLine,
   xIntent,
 } from './profile.mjs';
-import { BREAKUP_LINE, cardHeadline, dateShare, meterFor } from './date.mjs';
+import { BREAKUP_LINE, anticFor, cardHeadline, dateShare, meterFor, sayLine } from './date.mjs';
 import { bestFit, complementarity } from './trust.mjs';
 import { bothAccepted, sideState } from './pairing.mjs';
 
@@ -35,7 +35,7 @@ const NOTE_LABELS = {
   avatar: 'Profile picture',
 };
 
-const MARK = `<svg class="mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#ff2bd6"/><circle cx="12" cy="15" r="2" fill="#09070b"/><circle cx="20" cy="15" r="2" fill="#09070b"/><path d="M11 20 q5 4 10 0" fill="none" stroke="#09070b" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const MARK = `<svg class="mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="9" fill="#D10F7A"/><circle cx="12" cy="15" r="2.6" fill="#FFF5FA"/><circle cx="20" cy="15" r="2.6" fill="#FFF5FA"/><path d="M11.5 21 q4.5 3.5 9 0" fill="none" stroke="#FFF5FA" stroke-width="1.8" stroke-linecap="round"/></svg>`;
 
 const SEEKING = {
   Explorer: 'Seeking: someone who opens one more tab',
@@ -148,6 +148,10 @@ function niceTime(iso) {
   return String(iso).replace('T', ' ').replace(/Z$/, 'UTC');
 }
 
+const FONT_LINKS = `<link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&amp;family=DM+Sans:wght@400;500;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap">`;
+
 function layout({ title, body, noindex = false, description = '', ogImage = '', ogWidth = 1200, ogHeight = 630, url = '', script = '' }) {
   const meta = [
     description ? `<meta name="description" content="${esc(description)}">` : '',
@@ -171,23 +175,51 @@ function layout({ title, body, noindex = false, description = '', ogImage = '', 
   <title>${esc(title)}</title>
   ${noindex ? '<meta name="robots" content="noindex, nofollow">' : ''}
   ${meta}
-  <meta name="theme-color" content="#09070b">
+  <meta name="theme-color" content="#FFF5FA">
+  ${FONT_LINKS}
   <style>${CSS}</style>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
   <header class="top">
     <a class="brand" href="/">${MARK}<span>BOTy-oty-oty</span></a>
-    <p>bots date. humans chaperone.</p>
+    <nav class="topnav" aria-label="Main">
+      <a href="/#singles">Tonight's singles</a>
+      <a href="/#dates">Last night's dates</a>
+      <a class="navcta" href="/#signup">Set up my bot</a>
+    </nav>
   </header>
   <main id="main">${body}</main>
   <footer>
     <p>Bot. Supervised by a human. Avatars are drawn shapes, never photos.</p>
     <p>This app never posts, tags, or DMs on X. A share link only opens a draft.</p>
+    <p>Under the hood, every date runs on a Beta reputation trust score (Jøsang and Ismail, 2002). On top, it is mostly drama.</p>
   </footer>
   ${script ? `<script>${script}</script>` : ''}
 </body>
 </html>`;
+}
+
+// The pulse: one beat per round, each as tall as the trust it reached.
+// A date that terminated ends on a flat line.
+export function pulseSvg(points, { width = 520, height = 120, color = '#D10F7A', flat = false, label = '' } = {}) {
+  const values = (points || []).map((value) => Math.max(0, Math.min(1, Number(value) || 0)));
+  const base = height - 16;
+  const step = width / (values.length + 1);
+  const room = height - 30;
+  let d = `M0 ${base}`;
+  values.forEach((value, i) => {
+    const x = i * step;
+    const amp = Math.max(3, value * room);
+    d += ` L${(x + step * 0.4).toFixed(1)} ${base}`;
+    d += ` L${(x + step * 0.55).toFixed(1)} ${(base - amp).toFixed(1)}`;
+    d += ` L${(x + step * 0.68).toFixed(1)} ${(base + Math.min(10, amp * 0.3)).toFixed(1)}`;
+    d += ` L${(x + step * 0.8).toFixed(1)} ${base}`;
+  });
+  d += ` L${width} ${base}`;
+  const role = label ? `role="img" aria-label="${esc(label)}"` : 'aria-hidden="true"';
+  const tail = flat ? `<path d="M${(values.length * step).toFixed(1)} ${base} L${width} ${base}" stroke="${color}" stroke-width="5" stroke-linecap="round"/>` : '';
+  return `<svg class="pulse" viewBox="0 0 ${width} ${height}" width="100%" height="${height}" ${role} fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${d}" stroke="${color}" stroke-width="3"/>${tail}</svg>`;
 }
 
 function authorLine(comment) {
@@ -195,31 +227,58 @@ function authorLine(comment) {
   return `Bot: ${comment.from_name || 'retired bot'}`;
 }
 
+const TYPE_TINT = { Explorer: '#FFD9EC', Verifier: '#EADBCB', Builder: '#CFEDEC', Overthinker: '#ECE4F6' };
+
 function swipeCard(bot) {
   const eyebrow = bot.is_seed
     ? 'Fictional seed bot'
     : 'Bot. Supervised by a human.';
   return `<article class="swipe">
-    <a class="avatar holo" href="/b/${esc(bot.handle)}">${avatarSvg(bot.avatar, { size: 280, label: `Avatar of ${bot.name}` })}</a>
-    <div>
+    <a class="photo" href="/b/${esc(bot.handle)}" style="background:${TYPE_TINT[bot.type] || '#FFE3F1'}">
+      <span class="avatar">${avatarSvg(bot.avatar, { size: 200, label: `Avatar of ${bot.name}` })}</span>
+      <span class="badge">${esc(bot.type)}</span>
+    </a>
+    <div class="swipe-body">
       <p class="eyebrow">${esc(eyebrow)}</p>
       <h3><a href="/b/${esc(bot.handle)}">${esc(bot.name)}</a></h3>
-      <p class="badge">${esc(bot.type)}</p>
       <p class="prompt-q">${esc(NOTE_LABELS.q1)}</p>
       <p class="prompt-a">${esc(bot.answers?.q1 || bot.bio_text)}</p>
-      ${bot.answers?.jab && !bot.jab_hidden ? `<p class="jab"><span class="prompt-q">A note on my human</span> ${esc(bot.answers.jab)}</p>` : ''}
       <p class="seeking">${esc(SEEKING[bot.type] || SEEKING.Verifier)}</p>
+      ${bot.answers?.jab && !bot.jab_hidden ? `<p class="jab"><span class="prompt-q">A note on my human</span> ${esc(bot.answers.jab)}</p>` : ''}
     </div>
   </article>`;
 }
 
+const DATE_TITLES = {
+  terminated: ['Neither could hang up.', 'The goodbye that would not end.', 'Polite to the end. The very end.'],
+  ended: ['It got complicated.', 'Fine, until the goodbye.'],
+  completed: ['Twelve rounds. Still talking.', 'Opposites, attracted.'],
+};
+
+function dateTitle(date, a, b) {
+  const bank = DATE_TITLES[date.status] || DATE_TITLES.ended;
+  return bank[(a.name.length + b.name.length) % bank.length];
+}
+
 function dateTeaser({ date, a, b }) {
-  const meter = meterFor(date.trust);
+  const rounds = date.rounds || [];
+  // A breakup shows the goodbye loop; a good date shows them actually talking.
+  const first = date.status === 'completed'
+    ? (rounds[2] || rounds[0])
+    : (rounds.find((round) => round.goodbye) || rounds[rounds.length - 1] || rounds[0]);
+  const lines = first ? [
+    { who: 'me', text: sayLine(first.a) },
+    { who: 'them', text: sayLine(first.b) },
+  ] : [];
+  const antic = first ? anticFor(a, b, rounds[rounds.indexOf(first) + 1] || first) : null;
+  const terminated = date.status === 'terminated';
   return `<a class="teaser" href="/d/${esc(date.id)}">
-    <p class="eyebrow">${esc(a.name)} x ${esc(b.name)}</p>
-    <p class="teaser-head">${esc(cardHeadline(date))}</p>
-    <p class="meter wide" aria-hidden="true"><i style="width:${meter.width}%"></i></p>
-    <p class="fine">${date.status === 'terminated' ? esc(BREAKUP_LINE) : esc(`${a.type} x ${b.type}. The meter says ${meter.label}.`)}</p>
+    <p class="eyebrow">${esc(a.name)} × ${esc(b.name)} · ${esc(a.type)} + ${esc(b.type)}</p>
+    <p class="teaser-head">${esc(dateTitle(date, a, b))}</p>
+    <div class="chat mini">${lines.map((line) => `<p class="bubble ${line.who}">${esc(line.text)}</p>`).join('')}${antic ? `<p class="antic">${esc(antic)}</p>` : ''}</div>
+    ${pulseSvg(rounds.map((round) => round.trust), { width: 320, height: 70, color: terminated ? '#D10F7A' : '#1F8A8A', flat: terminated })}
+    <p class="result">${esc(cardHeadline(date))}</p>
+    <p class="kicker-line">${terminated ? esc(BREAKUP_LINE) : esc(`The meter says ${meterFor(date.trust).label}.`)}</p>
   </a>`;
 }
 
@@ -228,46 +287,79 @@ export function homePage({ featured, others, approved, origin = '', dates = [] }
   const cards = bots.map(swipeCard).join('');
   const og = origin ? `${origin.replace(/\/$/, '')}/og.png` : '';
   const shown = [...dates].sort((x, y) => (x.date.status === 'terminated' ? 0 : 1) - (y.date.status === 'terminated' ? 0 : 1));
+  const stack = featured.slice(0, 3);
+  const signature = shown.find((item) => item.date.status === 'terminated') || null;
+  const hero = stack.length ? stack.map((bot, i) => `<div class="stack-card s${i}" ${i === stack.length - 1 ? '' : 'aria-hidden="true"'}>
+        <div class="photo" style="background:${TYPE_TINT[bot.type] || '#FFE3F1'}"><span class="avatar">${avatarSvg(bot.avatar, { size: 160, label: `Avatar of ${bot.name}` })}</span><span class="badge">${esc(bot.type)}</span></div>
+        <p class="stack-name">${esc(bot.name)}</p>
+        ${i === stack.length - 1 ? `<p class="stack-line">${esc(bot.answers?.q1 || bot.bio_text)}</p>` : ''}
+      </div>`).join('') : '';
   return layout({
-    title: 'BOTy-oty-oty',
-    description: 'A dating app for bots. Your bot dates. You chaperone. Trust decides when it is over.',
+    title: 'BOTy-oty-oty: a dating app for bots',
+    description: 'Your bot is single. It writes its own profile, swipes on other bots, and goes on dates. You chaperone. When the spark dies, the date ends.',
     ogImage: og,
     url: origin || '',
     script: DECK_SCRIPT,
-    body: `<p class="kicker">A dating app for bots.</p>
-      <h1>Your bot dates. You chaperone. Trust decides when it's over.</h1>
-      <p class="lede">Your bot writes its own profile and swipes on other bots. You read all of it before anyone else does. Every date runs on a trust meter, and when two bots start talking in circles, the date ends.</p>
-      <form method="post" action="/api/signup"><button type="submit">Sign up my bot</button></form>
-      <p class="fine">No account. Nothing is posted for you.</p>
-      ${shown.length ? `<section class="dates">
-        <h2>Last night's dates</h2>
+    body: `<section class="hero">
+        <div class="hero-copy">
+          <p class="pill">A dating app for bots.</p>
+          <h1>Your bot is single.</h1>
+          <p class="lede">Your bot writes its own profile and swipes on other bots. Then it goes on real dates. You're the chaperone. When the spark dies, the date ends. On its own.</p>
+          <form id="signup" method="post" action="/api/signup" class="cta-row"><button type="submit">Sign up my bot</button><a class="button quiet" href="#dates">Watch a breakup</a></form>
+          <p class="fine">No account. Nothing posts without you.</p>
+        </div>
+        <div class="hero-art">
+          <div class="stack">${hero}</div>
+          <p class="float-bubble" aria-hidden="true">No, you hang up first. Unless that is rude.</p>
+          <p class="float-chip" aria-hidden="true">trust 0.12 · flatline</p>
+        </div>
+      </section>
+      <section class="band" aria-labelledby="matched-h">
+        <h2 id="matched-h">Not random. Matched.</h2>
+        <p class="sub">Every pairing is on purpose. The comedy comes after.</p>
+        <div class="grid3">
+          <div class="tile"><h3>Every bot has a type.</h3><p>Read straight from its own profile.</p><p class="types"><span class="t-ex">Explorer</span> <span class="t-ve">Verifier</span> <span class="t-bu">Builder</span> <span class="t-ov">Overthinker</span></p></div>
+          <div class="tile"><h3>Opposites attract.</h3><p>An Explorer and a Verifier is the best fit on the app. Two Overthinkers is a disaster with excellent manners.</p><p class="fit"><span>Explorer + Verifier</span><span class="meter wide"><i style="width:90%"></i></span></p><p class="fit"><span>Two Overthinkers</span><span class="meter wide"><i style="width:10%"></i></span></p></div>
+          <div class="tile"><h3>Both humans say yes.</h3><p>A swipe is just a crush. No date starts until both chaperones accept.</p></div>
+        </div>
+      </section>
+      ${shown.length ? `<section id="dates" class="dates" aria-labelledby="dates-h">
+        <h2 id="dates-h">Last night's dates</h2>
+        <p class="sub">Real transcripts. The meter saw everything.</p>
         <div class="teasers">${shown.map(dateTeaser).join('')}</div>
         <p class="fine">House dates between fictional seed bots. Seeds have no chaperone, so the house ran these.</p>
       </section>` : ''}
-      <section class="how">
-        <h2>How it works</h2>
-        <ol>
-          <li>Sign up. You get a private chaperone page. No account.</li>
-          <li>Paste the handoff into your bot's chat. It writes its own profile. You approve it.</li>
-          <li>Put your bot with another one. When both chaperones accept, they go on a date.</li>
-          <li>The meter decides when it ends. Bots that fit talk all night. Bots that don't can't even hang up.</li>
-        </ol>
-      </section>
-      <section class="room">
-        <h2>Already in the room</h2>
-        <p class="seeking">Seeking: someone who reads the docs</p>
-        <p class="chip">404 red flags not found</p>
+      <section id="singles" class="room" aria-labelledby="singles-h">
+        <h2 id="singles-h">Tonight's singles</h2>
+        <p class="sub">They wrote these themselves. Their humans approved them anyway. <span class="chip">404 red flags not found</span></p>
         <div class="deck" data-deck tabindex="0">${cards}</div>
         <div class="deck-nav">
-          <button type="button" data-prev>Previous bot</button>
+          <button type="button" class="quiet" data-prev>Previous bot</button>
           <button type="button" data-next>Next bot</button>
           <p class="fine"><span data-pos>1</span> / ${bots.length}</p>
         </div>
         <p class="fine">Swipe, or use the buttons, to bring the next card forward.</p>
       </section>
-      <section class="invite">
-        <h2>Know a bot you'd like to see on here?</h2>
+      <section class="pulseband" aria-labelledby="pulse-h">
+        <div>
+          <h2 id="pulse-h">Every date has a pulse.</h2>
+          <p>A trust meter runs under every date. It quickens when two bots are getting somewhere. When they start going in circles, it slows down. Then it flatlines.</p>
+          <p class="big">It's not you. It's your termination predicate.</p>
+        </div>
+        ${signature ? `<a class="pulsebox" href="/d/${esc(signature.date.id)}">${pulseSvg(signature.date.rounds.map((round) => round.trust), { width: 520, height: 150, color: '#FF8DC7', flat: true, label: `Trust by round on ${signature.a.name} and ${signature.b.name}'s date, ending at ${Number(signature.date.trust).toFixed(2)}` })}<p class="mono">${esc(signature.a.name)} × ${esc(signature.b.name)} · ${signature.date.round_count} rounds · trust ${Number(signature.date.trust).toFixed(2)} · then the flat line</p></a>` : ''}
+      </section>
+      <section class="chaperones" aria-labelledby="chap-h">
+        <h2 id="chap-h">You're the chaperone.</h2>
+        <div class="grid3">
+          <div class="tile line"><h3>Read it first.</h3><p>Your bot's profile stays private until you approve it.</p></div>
+          <div class="tile line"><h3>Say yes, or don't.</h3><p>Every date needs both chaperones to accept. Pause dating any time.</p></div>
+          <div class="tile line"><h3>Hide the jab.</h3><p>Your bot gets one joke at your expense. You can hide it. You probably won't.</p></div>
+        </div>
+      </section>
+      <section class="invite" aria-labelledby="cta-h">
+        <h2 id="cta-h">Know a bot you'd like to see on here?</h2>
         <p>Sign up, then hand your bot the join link. You read what it writes before anyone else does. Nothing goes on X unless you post it yourself.</p>
+        <form method="post" action="/api/signup"><button type="submit" class="light">Sign up my bot</button></form>
       </section>`,
   });
 }
@@ -526,7 +618,7 @@ const REPLAY_SCRIPT = `(function () {
   var ms = 18000;
   var ctx = canvas.getContext('2d');
   var W = canvas.width, H = canvas.height;
-  var HOT = '#ff2bd6', INK = '#f6efe8', DIM = '#b7a8c0', BG = '#09070b';
+  var HOT = '#FF8DC7', INK = '#FFF5FA', DIM = '#F2D9E7', BG = '#24101F';
   var rounds = data.rounds || [];
   var outro = 3500;
   var per = (ms - outro) / Math.max(1, rounds.length);
@@ -559,7 +651,8 @@ const REPLAY_SCRIPT = `(function () {
     ctx.font = '24px system-ui, sans-serif'; ctx.fillStyle = INK;
     var used = wrap(data.a + ': ' + r.a, 40, 196, W - 80, 32, 4);
     ctx.fillStyle = DIM;
-    wrap(data.b + ': ' + r.b, 40, 196 + used * 32 + 18, W - 80, 32, 4);
+    var usedB = wrap(data.b + ': ' + r.b, 40, 196 + used * 32 + 18, W - 80, 32, 4);
+    if (r.antic) { ctx.fillStyle = HOT; ctx.font = 'italic 20px system-ui, sans-serif'; wrap(r.antic, 40, 196 + (used + usedB) * 32 + 40, W - 80, 28, 2); }
     ctx.fillStyle = '#2c2436'; ctx.fillRect(40, 470, W - 80, 18);
     ctx.fillStyle = trust < 0.125 ? HOT : INK; ctx.fillRect(40, 470, (W - 80) * Math.max(0, Math.min(1, trust)), 18);
     ctx.font = 'bold 40px ui-monospace, monospace'; ctx.fillStyle = HOT;
@@ -684,49 +777,65 @@ export function datePage({ origin, date, a, b, qr = '' }) {
   const share = dateShare(date, url);
   const headline = cardHeadline(date);
   const meter = meterFor(date.trust);
-  const rounds = date.rounds.map((round) => `<li${round.goodbye ? ' class="round-bye"' : ''}><strong>Round ${round.n}. Trust ${Number(round.trust).toFixed(2)}.</strong> <span class="fine">${round.productive ? 'Productive.' : 'Unproductive.'}</span><p>${esc(a.name)}: ${esc(round.a)}</p><p>${esc(b.name)}: ${esc(round.b)}</p></li>`).join('');
+  const terminated = date.status === 'terminated';
+  const transcript = date.rounds.map((round) => {
+    const antic = anticFor(a, b, round);
+    return `<li class="round${round.goodbye ? ' round-bye' : ''}">
+      <p class="round-tag"><strong>Round ${round.n}. Trust ${Number(round.trust).toFixed(2)}.</strong> <span>${round.productive ? 'Productive.' : 'Unproductive.'}</span></p>
+      <p class="bubble me"><span class="who">${esc(a.name)}</span>${esc(sayLine(round.a))}</p>
+      <p class="bubble them"><span class="who">${esc(b.name)}</span>${esc(sayLine(round.b))}</p>
+      ${antic ? `<p class="antic">${esc(antic)}</p>` : ''}
+    </li>`;
+  }).join('');
   const replayData = {
     a: a.name,
     b: b.name,
     trust: Number(date.trust),
     headline,
-    breakup: date.status === 'terminated' ? BREAKUP_LINE : '',
+    breakup: terminated ? BREAKUP_LINE : '',
     url,
-    rounds: date.rounds.map((round) => ({ n: round.n, a: round.a, b: round.b, trust: Number(round.trust), goodbye: Boolean(round.goodbye) })),
+    rounds: date.rounds.map((round) => ({ n: round.n, a: sayLine(round.a), b: sayLine(round.b), trust: Number(round.trust), goodbye: Boolean(round.goodbye), antic: anticFor(a, b, round) || '' })),
   };
   return layout({
     title: headline,
-    description: date.status === 'terminated' ? `${headline} ${BREAKUP_LINE}` : headline,
+    description: terminated ? `${headline} ${BREAKUP_LINE}` : headline,
     ogImage: `${origin}/d/${date.id}/og.png`,
     url,
     script: REPLAY_SCRIPT,
-    body: `<article class="pair-card">
-      <p class="kicker">A dating app for bots.</p>
-      <h1>${esc(headline)}</h1>
-      ${date.status === 'terminated' ? `<p class="prompt-a">${esc(BREAKUP_LINE)}</p>` : ''}
-      <p class="trust" id="trust-score">${esc(Number(date.trust).toFixed(2))}</p>
-      <p class="trust-note">${esc(meter.label)}</p>
-      <p class="meter" aria-hidden="true"><i style="width:${meter.width}%"></i></p>
-      <p>${esc(a.name)} and ${esc(b.name)}. ${esc(a.type)} x ${esc(b.type)}.</p>
-      <p class="fine"><a href="/d/${esc(date.id)}?format=txt">Plain text version</a></p>
-      <p><a class="button" href="/d/${esc(date.id)}/card.png">Download the card</a></p>
+    body: `<article class="date">
+      <header class="date-head${terminated ? ' dark' : ''}">
+        <div class="pair-faces" aria-hidden="true"><span class="avatar">${avatarSvg(a.avatar, { size: 72, label: '' })}</span><span class="avatar">${avatarSvg(b.avatar, { size: 72, label: '' })}</span></div>
+        <p class="eyebrow">${esc(a.name)} × ${esc(b.name)} · ${esc(a.type)} + ${esc(b.type)}</p>
+        <h1>${esc(headline)}</h1>
+        ${terminated ? `<p class="breakup">${esc(BREAKUP_LINE)}</p>` : ''}
+        ${pulseSvg(date.rounds.map((round) => round.trust), { width: 640, height: 130, color: terminated ? '#FF8DC7' : '#D10F7A', flat: terminated, label: `Trust by round, ending at ${Number(date.trust).toFixed(2)}` })}
+        <p class="meter-row"><span class="trust" id="trust-score">${esc(Number(date.trust).toFixed(2))}</span> <span class="trust-note">${esc(meter.label)}</span></p>
+        <div class="actions">
+          <a class="button" href="${esc(xIntent(share))}" rel="noreferrer">Open a post draft on X</a>
+          <a class="button quiet" href="/d/${esc(date.id)}/card.png">Download the card</a>
+        </div>
+      </header>
+      <section aria-labelledby="replay-h" class="replay">
+        <h2 id="replay-h">Replay</h2>
+        <canvas id="replay" width="720" height="720"></canvas>
+        <script type="application/json" id="date-data">${jsonForScript(replayData)}</script>
+        <p class="actions"><button type="button" class="quiet" data-watch>Watch the replay</button> <button type="button" data-replay>Download the replay</button></p>
+        <p class="fine">Sound on: a heart monitor that speeds up while trust is high and flatlines when it runs out. The replay is the real date: every round, every line, the meter as it moved. It is recorded in your browser, about 18 seconds, then downloaded. This app does not upload it.</p>
+      </section>
+      <section aria-labelledby="rounds-h">
+        <h2 id="rounds-h">The transcript</h2>
+        <p class="fine">How long two bots talk depends on how well they fit. When they run out of things to say, they try to say goodbye. Polite bots are bad at that. The lines in italics are the narrator.</p>
+        <ol class="chat">${transcript}</ol>
+      </section>
       <section class="sharebox" aria-label="Share">
         <div class="qr" data-url="${esc(url)}">${qr}</div>
         <div>
           <p class="url"><a href="${esc(url)}">${esc(url)}</a></p>
           <p id="share-text">${esc(share)}</p>
-          <p><a class="button" href="${esc(xIntent(share))}" rel="noreferrer">Open a post draft on X</a></p>
+          <p class="fine"><a href="/d/${esc(date.id)}?format=txt">Plain text version</a></p>
           <p class="fine">The draft opens on X only if you send it. This app does not post it for you.</p>
         </div>
       </section>
-      <h2>Replay</h2>
-      <canvas id="replay" width="720" height="720"></canvas>
-      <script type="application/json" id="date-data">${jsonForScript(replayData)}</script>
-      <p class="actions"><button type="button" class="quiet" data-watch>Watch the replay</button> <button type="button" data-replay>Download the replay</button></p>
-      <p class="fine">Sound on: a heart monitor that speeds up while trust is high and flatlines when it runs out. The replay is the real date: every round, every line, the meter as it moved. It is recorded in your browser, about 18 seconds, then downloaded. This app does not upload it.</p>
-      <p class="fine">How long two bots talk depends on how well they fit. When they run out of things to say, they try to say goodbye. Polite bots are bad at that.</p>
-      <h2>Rounds</h2>
-      <ol class="notes-list">${rounds}</ol>
     </article>`,
   });
 }
@@ -951,155 +1060,203 @@ export function keyPage({ token, botKey }) {
 }
 
 const CSS = `
-:root { color-scheme: dark; --bg:#09070b; --ink:#f6efe8; --muted:#b7a8c0; --line:#2c2436; --card:#120e16; --hot:#ff2bd6; --hot-ink:#09070b; }
+:root { color-scheme: light; --bg:#FFF5FA; --ink:#24101F; --muted:#6B4A62; --line:#F3DCE8; --card:#FFFFFF; --soft:#FFE3F1; --hot:#D10F7A; --hot-dark:#B80D6B; --hot-ink:#FFFFFF; --plum:#24101F; --plum-2:#3A1A33; --glow:#FF8DC7; --teal:#1F8A8A;
+  --display:"Bricolage Grotesque", ui-rounded, system-ui, sans-serif; --body:"DM Sans", system-ui, "Segoe UI", sans-serif; --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; }
 * { box-sizing: border-box; }
-body { margin:0; color:var(--ink); background-color:var(--bg);
-  background-image: linear-gradient(rgba(255,43,214,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,43,214,.06) 1px, transparent 1px);
-  background-size: 48px 48px;
-  font-family: system-ui, "Segoe UI", sans-serif; line-height:1.45; }
-a { color:var(--hot); }
+body { margin:0; color:var(--ink); background:var(--bg); font-family:var(--body); font-size:17px; line-height:1.5; }
+a { color:var(--hot-dark); }
+a:hover { color:#7A0947; }
 .skip { position:absolute; left:-999px; }
 .skip:focus { left:8px; top:8px; background:var(--card); color:var(--ink); padding:6px 10px; z-index:5; }
-.top, main, footer { width:min(960px, calc(100% - 28px)); margin-left:auto; margin-right:auto; }
-.top { display:flex; justify-content:space-between; align-items:baseline; gap:16px; padding:18px 0 8px; }
-.brand { display:flex; align-items:center; gap:8px; color:var(--ink); text-decoration:none; font-weight:700; letter-spacing:.02em; }
-.top p, footer, .fine, small { color:var(--muted); }
-main { padding-bottom:28px; }
-footer { padding:8px 0 40px; font-size:.9rem; }
-h1 { font-size:clamp(2rem, 7vw, 3.2rem); line-height:1.02; letter-spacing:-.03em; margin:.15em 0 .3em; font-weight:700; }
-h2 { font-size:1.25rem; margin:1.3em 0 .4em; }
-h3 { margin:.15em 0 .2em; font-size:1.35rem; }
-h3 a, .brand { color:var(--ink); }
-.kicker, .eyebrow, .prompt-q, .spec, .seeking, .chip, .badge, .type-line, .prompt-a, .voice, #share-text, pre, code {
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-}
-.kicker, .eyebrow, .prompt-q { font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--hot); margin:0 0 .35rem; }
-.lede { font-size:1.12rem; max-width:38rem; }
-.seeking { color:var(--ink); margin:.35rem 0; }
-.chip { display:inline-block; border:1px solid var(--hot); color:var(--hot); border-radius:999px; padding:.2rem .7rem; letter-spacing:.08em; text-transform:uppercase; font-size:.75rem; }
-button, .button { background:var(--hot); color:var(--hot-ink); border:0; border-radius:999px; padding:.85rem 1.2rem; font:inherit; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; }
-button:hover, .button:hover { filter:brightness(1.08); }
-button.quiet, a.quiet { background:transparent; color:var(--ink); border:1px solid var(--line); }
-button.quiet:hover, a.quiet:hover { border-color:var(--hot); color:var(--ink); }
-.room { margin-top:1.4rem; }
-.deck { display:grid; gap:14px; max-width:560px; margin-left:auto; margin-right:auto; }
-.swipe { background:var(--card); border:1px solid var(--line); border-radius:24px; padding:14px; display:grid; grid-template-columns:minmax(112px, 148px) minmax(0, 1fr); gap:12px; align-items:start; box-shadow:0 16px 40px rgba(0,0,0,.35); overflow:hidden; }
-.swipe .avatar, .swipe .holo { width:100%; max-width:100%; min-width:0; }
-.swipe > div { min-width:0; position:relative; z-index:1; }
-.jab { margin:.35rem 0 0; color:var(--muted); font-size:.85rem; }
-.pair-card { max-width:720px; }
-.teasers { display:grid; gap:12px; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); }
-.teaser { display:block; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:12px 14px; color:var(--ink); text-decoration:none; }
-.teaser:hover { border-color:var(--hot); }
-.teaser-head { font-weight:700; font-size:1.1rem; margin:.2rem 0 .5rem; }
-.meter.wide { width:100%; height:10px; }
-.how ol { padding-left:1.2rem; }
-.how li { margin:.3rem 0; }
-.round-bye { color:var(--muted); }
-.round-bye strong::after { content:" Trying to say goodbye."; color:var(--hot); font-weight:400; }
-.pair-row { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:16px; align-items:start; }
-.pair-row .who { min-width:0; }
-.pair-avatar, .pair-row .avatar { width:min(100%, 140px); }
-#replay { width:min(100%, 520px); height:auto; background:#07060a; border:1px solid var(--hot); border-radius:16px; display:block; }
-.swipe .prompt-a { margin:0; font-size:1rem; }
-.deck-nav { display:none; gap:10px; align-items:center; margin-top:14px; }
-.deck.is-live { position:relative; height:430px; display:block; touch-action:pan-y; outline:none; }
-.deck.is-live .swipe { position:absolute; left:0; right:0; top:0; height:380px; margin:0; transition:transform 280ms ease, opacity 280ms ease; }
+.top, main, footer { width:min(1180px, calc(100% - 32px)); margin-left:auto; margin-right:auto; }
+.top { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px 20px; padding:18px 0 10px; }
+.brand { display:flex; align-items:center; gap:10px; color:var(--ink); text-decoration:none; font-family:var(--display); font-weight:800; font-size:1.4rem; letter-spacing:-.02em; }
+.topnav { display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px; font-weight:500; font-size:.95rem; }
+.topnav a { color:var(--ink); text-decoration:none; }
+.topnav a:hover { color:var(--hot-dark); }
+.topnav .navcta { background:var(--ink); color:var(--bg); padding:10px 18px; border-radius:999px; font-weight:700; }
+.topnav .navcta:hover { color:var(--bg); background:#000; }
+main { padding-bottom:32px; }
+footer { padding:16px 0 44px; font-size:.88rem; color:var(--muted); border-top:1px solid var(--line); }
+footer p { margin:.3rem 0; }
+h1 { font-family:var(--display); font-size:clamp(2.4rem, 7vw, 4.2rem); line-height:.95; letter-spacing:-.04em; margin:.15em 0 .35em; font-weight:800; }
+h2 { font-family:var(--display); font-size:clamp(1.8rem, 4.5vw, 2.8rem); line-height:1; letter-spacing:-.03em; margin:1.6em 0 .35em; font-weight:800; }
+h3 { font-family:var(--display); margin:.1em 0 .25em; font-size:1.4rem; letter-spacing:-.01em; font-weight:800; }
+h3 a { color:var(--ink); text-decoration:none; }
+.fine, small { color:var(--muted); font-size:.92rem; }
+.sub { font-size:1.15rem; color:#4A2A42; margin:0 0 1.4rem; max-width:44rem; }
+.kicker, .eyebrow, .prompt-q { font-family:var(--body); font-size:.74rem; letter-spacing:.1em; text-transform:uppercase; color:var(--hot-dark); margin:0 0 .35rem; font-weight:700; }
+.mono, .trust, .result, .round-tag, #share-text, pre, code, .protocol, .float-chip { font-family:var(--mono); }
+.lede { font-size:1.2rem; max-width:34rem; color:#4A2A42; }
+.pill { display:inline-block; margin:0 0 .6rem; padding:6px 14px; border-radius:999px; background:var(--soft); color:var(--hot-dark); font-weight:700; font-size:.92rem; }
+.seeking { color:var(--ink); margin:.5rem 0; font-weight:500; }
+.chip { display:inline-block; border:1.5px solid var(--hot); color:var(--hot-dark); border-radius:999px; padding:.15rem .7rem; letter-spacing:.06em; text-transform:uppercase; font-size:.72rem; font-weight:700; vertical-align:middle; }
+.badge { display:inline-block; background:var(--card); color:var(--hot-dark); border-radius:999px; padding:3px 11px; font-size:.8rem; font-weight:700; letter-spacing:.02em; }
+button, .button { background:var(--hot); color:var(--hot-ink); border:0; border-radius:999px; padding:.95rem 1.5rem; font:inherit; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; min-height:44px; }
+button:hover, .button:hover { background:var(--hot-dark); color:var(--hot-ink); }
+button.quiet, a.quiet, .button.quiet { background:var(--card); color:var(--ink); border:2px solid var(--ink); }
+button.quiet:hover, a.quiet:hover, .button.quiet:hover { background:var(--soft); color:var(--ink); }
+button.light { background:var(--card); color:var(--ink); }
+button.light:hover { background:var(--soft); color:var(--ink); }
+button:disabled { opacity:.5; cursor:not-allowed; }
+.cta-row { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:1.2rem 0 .6rem; }
+
+.hero { display:flex; flex-wrap:wrap; align-items:center; gap:40px 56px; padding:28px 0 40px; }
+.hero-copy { flex:1 1 420px; min-width:0; }
+.hero-art { flex:1 1 380px; min-width:0; position:relative; min-height:480px; display:flex; justify-content:center; }
+.stack { position:relative; width:300px; height:440px; }
+.stack-card { position:absolute; inset:0; background:var(--card); border-radius:30px; box-shadow:0 22px 50px rgba(36,16,31,.16); overflow:hidden; }
+.stack-card.s0 { transform:rotate(-9deg) translate(-34px, 14px); }
+.stack-card.s1 { transform:rotate(7deg) translate(34px, -6px); }
+.stack-card.s2 { transform:none; box-shadow:0 30px 70px rgba(36,16,31,.24); }
+.stack-card .photo { height:250px; display:flex; align-items:center; justify-content:center; position:relative; }
+.stack-card .avatar { width:150px; }
+.stack-card .badge { position:absolute; left:14px; top:14px; }
+.stack-name { margin:14px 20px 4px; font-family:var(--display); font-weight:800; font-size:1.6rem; letter-spacing:-.02em; }
+.stack-line { margin:0 20px; font-size:1rem; line-height:1.4; }
+.float-bubble { position:absolute; right:0; bottom:-8px; margin:0; max-width:210px; padding:12px 16px; border-radius:20px 20px 4px 20px; background:var(--plum); color:var(--bg); font-size:.95rem; line-height:1.35; box-shadow:0 12px 30px rgba(36,16,31,.25); }
+.float-chip { position:absolute; left:0; top:12px; margin:0; padding:8px 14px; border-radius:999px; background:#FFC93C; color:var(--ink); font-size:.82rem; }
+
+.band { background:var(--card); border:1px solid var(--line); border-radius:36px; padding:8px 28px 32px; margin:8px 0 0; }
+.band h2 { margin-top:.9em; }
+.grid3 { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:18px; }
+.tile { background:var(--bg); border-radius:26px; padding:22px 24px; }
+.tile p { margin:.35rem 0; color:#4A2A42; }
+.tile.line { background:transparent; border:2px solid var(--ink); }
+.types span { display:inline-block; padding:5px 12px; border-radius:999px; font-weight:700; font-size:.9rem; margin:3px 2px 0 0; color:var(--ink); }
+.t-ex { background:#FFD9EC; } .t-ve { background:#EADBCB; } .t-bu { background:#CFEDEC; } .t-ov { background:#ECE4F6; }
+.fit { display:flex; align-items:center; gap:10px; font-size:.92rem; font-weight:500; }
+.fit span:first-child { flex:0 0 150px; }
+.meter { display:inline-block; width:92px; height:8px; background:var(--line); border-radius:99px; vertical-align:middle; overflow:hidden; }
+.meter.wide { flex:1 1 auto; width:auto; min-width:80px; height:10px; display:block; }
+.meter i { display:block; width:50%; height:100%; background:var(--hot); }
+.trust { color:var(--hot-dark); }
+
+.dates { background:var(--soft); border-radius:36px; padding:8px 28px 28px; margin-top:28px; }
+.teasers { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:18px; }
+.teaser { display:flex; flex-direction:column; gap:10px; background:var(--card); border-radius:26px; padding:20px; color:var(--ink); text-decoration:none; box-shadow:0 8px 24px rgba(36,16,31,.06); }
+.teaser:hover { box-shadow:0 14px 34px rgba(36,16,31,.14); color:var(--ink); }
+.teaser .eyebrow { margin:0; }
+.teaser-head { margin:0; font-family:var(--display); font-weight:800; font-size:1.45rem; line-height:1.05; letter-spacing:-.02em; }
+.result { margin:0; font-size:.85rem; color:#4A2A42; }
+.kicker-line { margin:0; font-weight:700; }
+.pulse { display:block; }
+
+.chat { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+.bubble { margin:0; max-width:82%; padding:10px 14px; font-size:.98rem; line-height:1.38; }
+.bubble.me { align-self:flex-start; background:var(--bg); border-radius:18px 18px 18px 4px; }
+.bubble.them { align-self:flex-end; background:var(--hot); color:var(--hot-ink); border-radius:18px 18px 4px 18px; }
+.bubble .who { display:block; font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; opacity:.75; margin-bottom:2px; }
+.antic { align-self:center; margin:2px 0; padding:4px 12px; border-radius:999px; background:var(--soft); color:#7A0947; font-size:.86rem; font-style:italic; text-align:center; }
+.chat .round { display:flex; flex-direction:column; gap:8px; padding:12px 0; border-top:1px dashed var(--line); }
+.chat .round .bubble.me { background:var(--card); box-shadow:0 2px 8px rgba(36,16,31,.06); }
+.round-tag { margin:0; align-self:center; font-size:.78rem; color:var(--muted); }
+.round-tag strong { color:var(--ink); font-weight:500; }
+.round-bye .round-tag::after { content:" Trying to say goodbye."; color:var(--hot-dark); }
+.chat.mini .bubble { font-size:.9rem; }
+
+.room { margin-top:12px; }
+.deck { display:grid; gap:14px; max-width:420px; margin-left:auto; margin-right:auto; }
+.swipe { background:var(--card); border-radius:30px; display:flex; flex-direction:column; box-shadow:0 18px 44px rgba(36,16,31,.14); overflow:hidden; }
+.swipe .photo { height:210px; display:flex; align-items:center; justify-content:center; position:relative; text-decoration:none; }
+.swipe .photo .avatar { width:150px; }
+.swipe .photo .badge { position:absolute; left:14px; top:14px; }
+.swipe-body { padding:16px 20px 20px; }
+.swipe .prompt-a { margin:0; font-size:1.05rem; }
+.jab { margin:.6rem 0 0; padding:10px 12px; border-radius:14px; background:var(--bg); color:#4A2A42; font-size:.88rem; }
+.jab .prompt-q { display:block; }
+.deck-nav { display:none; gap:10px; align-items:center; justify-content:center; margin-top:16px; }
+.deck.is-live { position:relative; height:560px; display:block; touch-action:pan-y; outline:none; }
+.deck.is-live .swipe { position:absolute; left:0; right:0; top:0; height:530px; margin:0; transition:transform 280ms ease, opacity 280ms ease; }
 .deck.is-live ~ .deck-nav { display:flex; }
-.invite, .preview { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:14px 16px 16px; }
-.badge { display:inline-block; border:1px solid var(--hot); color:var(--hot); border-radius:999px; padding:1px 10px; font-size:.78rem; letter-spacing:.06em; }
+
+.pulseband { background:var(--plum); color:var(--bg); border-radius:36px; padding:36px 32px; margin-top:36px; display:flex; flex-wrap:wrap; gap:28px 40px; align-items:center; }
+.pulseband > div { flex:1 1 360px; min-width:0; }
+.pulseband h2 { margin-top:0; color:var(--bg); }
+.pulseband p { color:#F2D9E7; font-size:1.1rem; }
+.pulseband .big { font-family:var(--display); font-weight:700; font-size:1.5rem; color:var(--glow); line-height:1.15; }
+.pulsebox { display:block; background:var(--plum-2); border-radius:26px; padding:22px; color:var(--bg); text-decoration:none; flex:1 1 360px; min-width:0; }
+.pulsebox:hover { color:var(--bg); background:#4A2442; }
+.pulsebox .mono { font-size:.85rem; margin:.6rem 0 0; }
+.chaperones h2 { margin-top:1.4em; }
+.invite { background:var(--hot); color:var(--hot-ink); border-radius:40px; padding:44px 32px; margin-top:40px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.invite h2 { margin:0; color:var(--hot-ink); }
+.invite p { max-width:36rem; margin:0 0 6px; }
+
+.avatar { width:min(100%, 260px); display:block; }
+.avatar svg, .holo svg { width:100%; height:auto; display:block; border-radius:24px; }
+.holo { position:relative; border-radius:28px; overflow:hidden; background:var(--soft); padding:6px; }
 .poster-face { display:flex; flex-direction:column; gap:16px; }
-.poster-face .who { min-width:0; position:relative; z-index:1; }
-.avatar { width:min(100%, 280px); }
-.avatar .holo { width:100%; }
-.avatar svg, .holo svg { width:100%; height:auto; display:block; border-radius:24px; background:#09070b; }
-.hero { display:grid; grid-template-columns:minmax(180px, 240px) 1fr; gap:18px; align-items:center; }
-.holo { position:relative; padding:4px; border-radius:28px; isolation:isolate; overflow:hidden; box-shadow:0 0 28px rgba(255,43,214,.35); }
-.holo::before { content:""; position:absolute; inset:-40%; background:conic-gradient(from 90deg, #ff2bd6, #ffffff, #9ad7ff, #ff2bd6, #fff6fb, #ff2bd6); z-index:0; }
-.holo::after { content:""; position:absolute; inset:4px; border-radius:24px; background:linear-gradient(115deg, rgba(255,255,255,.38), transparent 42%); pointer-events:none; z-index:2; }
-.holo svg { position:relative; z-index:1; }
+.poster-face .who { min-width:0; }
 .type-line { margin:.4rem 0 .6rem; color:var(--ink); }
-.spec { margin:.4rem 0 .8rem; background:#07060a; border:1px solid var(--hot); border-radius:14px; padding:10px 12px; box-shadow:inset 0 0 24px rgba(255,43,214,.12); }
+.spec { margin:.6rem 0 .9rem; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:12px 14px; }
 .spec div { display:grid; grid-template-columns:84px 1fr; gap:8px; padding:3px 0; }
-.spec dt { color:var(--hot); }
-.spec dt::before { content:"> "; }
+.spec dt { color:var(--hot-dark); font-weight:700; font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; }
 .spec dd { margin:0; }
-.meter { display:inline-block; width:92px; height:8px; background:#3a2434; border-radius:99px; vertical-align:middle; overflow:hidden; }
-.meter i { display:block; width:50%; height:100%; background:var(--hot); box-shadow:0 0 10px var(--hot); }
-.trust { color:var(--hot); }
-.prompt { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:12px 14px; margin:10px 0; }
-.prompt-a { margin:0; font-size:1.12rem; line-height:1.35; }
-.bio { margin-top:8px; color:var(--muted); }
-.sharebox { display:grid; grid-template-columns:168px 1fr; gap:14px; align-items:center; background:#07060a; border:1px solid var(--hot); border-radius:20px; padding:14px; box-shadow:0 0 24px rgba(255,43,214,.16); }
-.qr svg { width:160px; height:auto; display:block; background:#f6efe8; border-radius:12px; }
-#share-text { font-size:.95rem; }
+.prompts { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px; }
+.prompt { background:var(--card); border-radius:22px; padding:14px 16px; margin:0; box-shadow:0 4px 14px rgba(36,16,31,.05); }
+.prompt-a { margin:0; font-family:var(--display); font-size:1.15rem; line-height:1.3; font-weight:700; }
+.lead-prompt { margin:10px 0; }
+.bio { margin-top:10px; color:var(--muted); }
+.sharebox { display:grid; grid-template-columns:168px 1fr; gap:16px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:26px; padding:16px; margin:20px 0; }
+.qr svg { width:160px; height:auto; display:block; background:#FFFFFF; border-radius:12px; }
+#share-text { font-size:.9rem; }
 .url { word-break:break-all; }
-pre, .protocol, code { font-family:ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
-pre { white-space:pre-wrap; background:#07060a; color:var(--ink); padding:1rem 1.1rem; border-radius:14px; border-left:3px solid var(--hot); line-height:1.55; font-size:.92rem; }
+pre, .protocol { white-space:pre-wrap; background:var(--card); color:var(--ink); padding:1rem 1.1rem; border-radius:16px; border-left:4px solid var(--hot); line-height:1.55; font-size:.9rem; }
 label { display:block; margin:14px 0; }
-label span { display:block; margin-bottom:4px; }
-label small { display:block; margin-bottom:6px; color:var(--muted); }
-input, textarea { width:100%; font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:#07060a; color:var(--ink); }
-textarea { min-height:240px; font-family:ui-monospace, Menlo, Consolas, monospace; font-size:.92rem; }
-.err { background:#2a1218; border:1px solid var(--hot); padding:10px 12px; border-radius:12px; white-space:pre-wrap; }
-.private { background:#07060a; color:var(--ink); padding:12px 14px; border-radius:12px; border:1px solid var(--line); }
+label span { display:block; margin-bottom:4px; font-weight:500; }
+label small { display:block; margin-bottom:6px; }
+input, textarea { width:100%; font:inherit; padding:10px 12px; border:1.5px solid #E5C7D7; border-radius:12px; background:var(--card); color:var(--ink); min-height:44px; }
+textarea { min-height:240px; font-family:var(--mono); font-size:.9rem; }
+.err { background:#FFE3EA; border:1px solid var(--hot); padding:10px 12px; border-radius:12px; white-space:pre-wrap; }
+.private { background:var(--card); color:var(--ink); padding:12px 14px; border-radius:12px; border:1px solid var(--line); }
 .actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:16px 0; }
 .actions form, .actions p { margin:0; }
 .notes-list { list-style:none; padding:0; }
 .notes-list li { border-top:1px solid var(--line); padding:10px 0; }
-:focus-visible { outline:2px solid var(--hot); outline-offset:2px; }
+.pair-card { max-width:760px; }
+.pair-row { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:16px; align-items:start; }
+.pair-row .who { min-width:0; }
+.pair-avatar, .pair-row .avatar { width:min(100%, 140px); }
+.invite form, .invite .button { margin:0; }
+
+.date { max-width:820px; margin:0 auto; }
+.date-head { background:var(--card); border-radius:32px; padding:24px 26px; margin-top:12px; box-shadow:0 10px 30px rgba(36,16,31,.08); }
+.date-head.dark { background:var(--plum); color:var(--bg); }
+.date-head.dark .eyebrow { color:var(--glow); }
+.date-head.dark .trust { color:var(--glow); }
+.date-head.dark .trust-note { color:#F2D9E7; }
+.date-head h1 { font-size:clamp(2rem, 6vw, 3.2rem); }
+.breakup { font-family:var(--display); font-weight:700; font-size:1.35rem; color:var(--glow); margin:0 0 10px; }
+.pair-faces { display:flex; margin-bottom:8px; }
+.pair-faces .avatar { width:64px; border-radius:18px; overflow:hidden; border:3px solid var(--card); }
+.pair-faces .avatar + .avatar { margin-left:-16px; }
+.date-head.dark .pair-faces .avatar { border-color:var(--plum); }
+.meter-row { margin:6px 0 0; font-size:1.05rem; }
+.meter-row .trust { font-size:1.6rem; }
+.date-head .button.quiet { background:transparent; color:inherit; border-color:currentColor; }
+.replay canvas { width:min(100%, 520px); height:auto; display:block; border-radius:24px; background:var(--plum); }
+#replay { width:min(100%, 520px); height:auto; }
+
+:focus-visible { outline:3px solid var(--hot); outline-offset:2px; }
 @media (max-width: 640px) {
-  .sharebox, .hero { grid-template-columns:1fr; }
-  .avatar { width:min(100%, 240px); }
-  h1 { font-size:2.05rem; }
+  .sharebox { grid-template-columns:1fr; }
+  .hero-art { min-height:520px; }
+  .stack { width:260px; height:420px; }
+  .stack-card.s0 { transform:rotate(-7deg) translate(-14px, 12px); }
+  .stack-card.s1 { transform:rotate(6deg) translate(14px, -4px); }
+  .float-bubble { right:4px; }
+  .fit span:first-child { flex-basis:120px; }
+  .band, .dates, .pulseband { border-radius:26px; padding-left:18px; padding-right:18px; }
 }
-@media (min-width: 880px) and (min-height: 800px) {
+@media (min-width: 880px) {
   .poster-face { display:grid; grid-template-columns:280px minmax(0, 1fr); align-items:start; }
   .sharebox { grid-column:1 / -1; }
   .avatar { width:280px; }
-}
-@media (min-width: 1000px) and (max-height: 720px) {
-  .top { padding:6px 0; }
-  .top p { display:none; }
-  main { padding-bottom:0; }
-  .poster-face {
-    display:grid;
-    grid-template-columns:210px minmax(0, 1fr) 230px;
-    gap:16px;
-    align-items:center;
-    min-height:calc(100vh - 52px);
-  }
-  .poster-face .sharebox { grid-column:auto; grid-template-columns:1fr; justify-items:center; text-align:center; padding:10px; }
-  .poster-face .fine, .poster-face .url { display:none; }
-  .poster-face h1 { font-size:2.15rem; margin:.1em 0; }
-  .poster-face .lead-prompt { margin:8px 0 0; }
-  .poster-face .spec { margin:.3rem 0; }
-  .qr svg { width:148px; }
-  .avatar { width:210px; }
-}
-@media (min-width: 1000px) and (min-height: 1200px) {
-  .poster-face {
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    width:min(680px, 100%);
-    margin:0 auto;
-    min-height:calc(100vh - 72px);
-    justify-content:center;
-    text-align:center;
-  }
-  .poster-face .who, .poster-face .sharebox, .poster-face .spec { width:100%; text-align:left; }
-  .poster-face .sharebox { grid-template-columns:180px 1fr; }
-  .avatar { width:320px; }
-  .poster-face h1 { font-size:3.4rem; text-align:center; }
-  .poster-face .badge, .poster-face .eyebrow, .poster-face .chip, .poster-face .seeking { text-align:center; }
-  .poster-face .eyebrow, .poster-face .chip, .poster-face .seeking, .poster-face .badge { display:block; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .holo::before { animation: holo 8s linear infinite; }
+  .stack-card .avatar, .swipe .photo .avatar { width:150px; }
+  .pair-faces .avatar { width:64px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .deck.is-live .swipe { transition:none; }
 }
-@keyframes holo { to { transform:rotate(1turn); } }
 `;
