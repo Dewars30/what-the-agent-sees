@@ -581,14 +581,66 @@ const REPLAY_SCRIPT = `(function () {
       if (data.breakup) { ctx.fillStyle = HOT; ctx.font = '26px system-ui, sans-serif'; wrap(data.breakup, 40, 260 + n * 44 + 24, W - 80, 34, 3); }
       ctx.fillStyle = DIM; ctx.font = '18px ui-monospace, monospace'; ctx.fillText(data.url, 40, H - 40);
     }
+    return trust;
+  }
+  // Heart monitor. Original sound, made in the browser: a beep that runs
+  // faster while trust is high and slows as it falls. Below 0.125 it flatlines.
+  // Nothing plays until someone presses a button.
+  var audio = null;
+  function monitor() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!audio) {
+      var ac = new AC();
+      var out = ac.createGain(); out.gain.value = 0.22; out.connect(ac.destination);
+      var tap = ac.createMediaStreamDestination ? ac.createMediaStreamDestination() : null;
+      if (tap) out.connect(tap);
+      audio = { ac: ac, out: out, tap: tap };
+    }
+    if (audio.ac.state === 'suspended') audio.ac.resume();
+    return audio;
+  }
+  function beep(m) {
+    var now = m.ac.currentTime;
+    var osc = m.ac.createOscillator(), g = m.ac.createGain();
+    osc.type = 'sine'; osc.frequency.value = 880;
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(1, now + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+    osc.connect(g); g.connect(m.out); osc.start(now); osc.stop(now + 0.14);
+  }
+  function flatline(m, seconds) {
+    var now = m.ac.currentTime;
+    var osc = m.ac.createOscillator(), g = m.ac.createGain();
+    osc.type = 'sine'; osc.frequency.value = 880;
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.8, now + 0.03);
+    g.gain.setValueAtTime(0.8, now + seconds - 0.4);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + seconds);
+    osc.connect(g); g.connect(m.out); osc.start(now); osc.stop(now + seconds + 0.05);
+    return osc;
   }
   var raf = 0;
+  var line = null;
   function play(onDone) {
     cancelAnimationFrame(raf);
+    var m = monitor();
+    if (line) { try { line.stop(); } catch (e) {} line = null; }
     var started = Date.now();
+    var lastBeat = -1e9;
+    var flat = false;
     function tick() {
       var t = Date.now() - started;
-      draw(Math.min(t, ms - 1));
+      var trust = draw(Math.min(t, ms - 1));
+      if (m && t < ms) {
+        if (!flat && trust < 0.125) {
+          flat = true;
+          line = flatline(m, Math.max(0.6, (ms - t) / 1000 - 0.2));
+        } else if (!flat && t < ms - outro && t - lastBeat >= 1100 - 700 * trust) {
+          lastBeat = t;
+          beep(m);
+        }
+      }
       if (t < ms) raf = requestAnimationFrame(tick);
       else if (onDone) onDone();
     }
@@ -601,14 +653,21 @@ const REPLAY_SCRIPT = `(function () {
   if (!button || !canvas.captureStream || typeof MediaRecorder === 'undefined') { if (button) button.disabled = true; return; }
   button.addEventListener('click', function () {
     var stream = canvas.captureStream(30);
-    var rec = new MediaRecorder(stream);
+    var m = monitor();
+    if (m && m.tap) m.tap.stream.getAudioTracks().forEach(function (track) { stream.addTrack(track); });
+    // X takes MP4, not WebM. Record MP4 where the browser can.
+    var types = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'];
+    var type = '';
+    for (var i = 0; i < types.length; i++) { if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(types[i])) { type = types[i]; break; } }
+    var rec = type ? new MediaRecorder(stream, { mimeType: type }) : new MediaRecorder(stream);
     var chunks = [];
     rec.ondataavailable = function (ev) { if (ev.data && ev.data.size) chunks.push(ev.data); };
     rec.onstop = function () {
-      var blob = new Blob(chunks, { type: rec.mimeType || 'video/webm' });
+      var kind = rec.mimeType || type || 'video/webm';
+      var blob = new Blob(chunks, { type: kind });
       var link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = 'boty-date.webm';
+      link.download = kind.indexOf('mp4') === 0 ? 'boty-date.mp4' : 'boty-date.webm';
       link.click();
     };
     rec.start();
@@ -664,7 +723,7 @@ export function datePage({ origin, date, a, b, qr = '' }) {
       <canvas id="replay" width="720" height="720"></canvas>
       <script type="application/json" id="date-data">${jsonForScript(replayData)}</script>
       <p class="actions"><button type="button" class="quiet" data-watch>Watch the replay</button> <button type="button" data-replay>Download the replay</button></p>
-      <p class="fine">The replay is the real date: every round, every line, the meter as it moved. It is recorded in your browser, about 18 seconds, then downloaded. This app does not upload it.</p>
+      <p class="fine">Sound on: a heart monitor that speeds up while trust is high and flatlines when it runs out. The replay is the real date: every round, every line, the meter as it moved. It is recorded in your browser, about 18 seconds, then downloaded. This app does not upload it.</p>
       <p class="fine">How long two bots talk depends on how well they fit. When they run out of things to say, they try to say goodbye. Polite bots are bad at that.</p>
       <h2>Rounds</h2>
       <ol class="notes-list">${rounds}</ol>
