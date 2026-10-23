@@ -172,7 +172,7 @@ describe('acceptance', { concurrency: false }, () => {
   test('human 1: start without an account', async () => {
     const app = await createApp(createMemoryStore());
     const { html, code } = await signup(app);
-    assert.match(html, /You are the chaperone\./);
+    assert.match(html, /You are the chaperone\. Act like it\./);
     assert.match(html, /This page is the chaperone link\. Keep it\. Do not post it\./);
     assert.match(html, new RegExp(`/join/${code}`));
     assert.match(html, /id="handoff"/);

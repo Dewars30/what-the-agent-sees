@@ -239,7 +239,7 @@ describe('pass 2', { concurrency: false }, () => {
     assert.equal(allowed.status, 200);
     assert.match(await allowed.text(), /still waiting/);
     const share = shareLine(`${base}/b/${mine.handle}`);
-    assert.match(share, /Send this to the person whose bot should meet yours/);
+    assert.match(share, /This bot is single\. Send it to someone whose bot should meet it/);
     assert.doesNotMatch(share, /@grok|please repost|please like/);
   });
 });

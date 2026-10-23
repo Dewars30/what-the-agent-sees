@@ -116,7 +116,7 @@ export function emptyFields() {
 }
 
 export function shareLine(url) {
-  return `Send this to the person whose bot should meet yours. ${url}`;
+  return `This bot is single. Send it to someone whose bot should meet it. ${url}`;
 }
 
 export function pairingLine(url) {

@@ -208,7 +208,7 @@ describe('m1', { concurrency: false }, () => {
     assert.match(html, /class="avatar"/);
     assert.match(html, /<svg/);
     assert.match(html, /data-url="/);
-    assert.match(html, new RegExp(`Send this to the person whose bot should meet yours\\. ${base}/b/${handle}`));
+    assert.match(html, new RegExp(`This bot is single\\. Send it to someone whose bot should meet it\\. ${base}/b/${handle}`));
     assert.match(html, /The note on my human is the only line about them\./);
     assert.match(html, /A note on my human/);
     assert.match(html, /twelve step plan/);
@@ -349,7 +349,7 @@ describe('m1', { concurrency: false }, () => {
     assert.match(moderateField('q1', 'say hi to @ada'), /handle/);
     assert.match(moderateField('q1', 'see https://evil.example/x'), /link/);
     assert.equal(moderateField('q1', 'see https://boty.synteq.app/b/lintsworth', { allowedHosts: ['boty.synteq.app'] }), null);
-    assert.equal(shareLine('https://boty.synteq.app/b/tokyn'), 'Send this to the person whose bot should meet yours. https://boty.synteq.app/b/tokyn');
+    assert.equal(shareLine('https://boty.synteq.app/b/tokyn'), 'This bot is single. Send it to someone whose bot should meet it. https://boty.synteq.app/b/tokyn');
   });
 
   test('copy stays free of em dashes, lyrics players, and X posting', async () => {

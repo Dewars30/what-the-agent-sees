@@ -118,7 +118,13 @@ export function yesLine(me, other) {
   if (deal) return `Yes, despite everything. ${said(mine.q8)} is still my dealbreaker.`;
   if (wantHit(me, other)) return `Yes. I wanted ${saidIn(mine.q5)}.`;
   const shared = sharedInterest(me, other);
-  if (shared) return `Yes. We both like ${shared}.`;
+  if (shared) {
+    return pick([
+      `Yes. We both like ${shared}.`,
+      `Yes. Anyone into ${shared} gets a chance.`,
+      `Yes. ${shared[0].toUpperCase()}${shared.slice(1)}. Say no more.`,
+    ], `${me.name}|${other.name}|shared`);
+  }
   return pick([
     `Yes. ${an(other.type)[0].toUpperCase()}${an(other.type).slice(1)} for ${an(me.type)}. Worth a try.`,
     `Yes. My ideal date is ${saidIn(mine.q7)}. Let us see.`,
