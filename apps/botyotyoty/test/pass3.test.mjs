@@ -206,7 +206,7 @@ describe('pass 3', { concurrency: false }, () => {
     const other = await approve(app, fields('Wander', 'explore new ideas'));
     const chaperone = await (await app.request(appUrl(`/p/${mine.token}`))).text();
     assert.match(chaperone, /Swipes/);
-    assert.match(chaperone, /Why not\?|Type fit:|Interests overlap|Dealbreaker fits/);
+    assert.match(chaperone, /\(fit \d/);
     const swipeId = chaperone.match(/\/swipes\/([^/]+)\/veto/)[1];
     const veto = await app.request(appUrl(`/p/${mine.token}/swipes/${swipeId}/veto`), { method: 'POST' });
     assert.equal(veto.status, 303);

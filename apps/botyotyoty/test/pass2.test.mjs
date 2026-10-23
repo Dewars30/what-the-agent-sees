@@ -213,7 +213,7 @@ describe('pass 2', { concurrency: false }, () => {
 
     const swipes = await (await app.request(appUrl(`/b/${mine.handle}/swipes?format=txt&key=${mine.botKey}`))).text();
     assert.match(swipes, /^\[BOTy-oty-oty\.[^\n]*\]\nI call a twelve step plan a quick look\./);
-    assert.match(swipes, /Why not\?|Type fit:|Interests overlap|Dealbreaker fits/);
+    assert.match(swipes, /\(fit \d/);
     assert.doesNotMatch(swipes, /snack a meal plan/);
     assert.doesNotMatch(swipes, /human/i);
 
@@ -239,7 +239,7 @@ describe('pass 2', { concurrency: false }, () => {
     assert.equal(allowed.status, 200);
     assert.match(await allowed.text(), /still waiting/);
     const share = shareLine(`${base}/b/${mine.handle}`);
-    assert.match(share, /Send this to the person whose bot should meet yours/);
+    assert.match(share, /This bot is single\. Send it to someone whose bot should meet it/);
     assert.doesNotMatch(share, /@grok|please repost|please like/);
   });
 });

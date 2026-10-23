@@ -111,7 +111,7 @@ export async function createApp(existingStore) {
   // Pairing and decision routes change state. Limit them per IP, like the rest.
   app.use('*', async (c, next) => {
     const path = c.req.path;
-    const acts = (c.req.method === 'POST' && /^\/(p\/[^/]+\/(pair|swipes\/[^/]+\/veto)|pair\/[^/]+\/respond)/.test(path))
+    const acts = (c.req.method === 'POST' && /^\/(p\/[^/]+\/(pair|swipes\/[^/]+\/veto)|pair\/[^/]+\/respond|d\/[^/]+\/rematch)/.test(path))
       || /^\/api\/pair\//.test(path);
     if (acts && !limits.allow(`pairing:ip:${clientIp(c)}`, 30, 10 * 60 * 1000)) return slow(c);
     await next();
@@ -657,6 +657,32 @@ export async function createApp(existingStore) {
     if (c.req.query('format') === 'txt') return plain(c, dateText({ origin, ...loaded }));
     const qr = await qrSvg(`${origin}/d/${loaded.date.id}`);
     return html(c, datePage({ origin, ...loaded, qr }));
+  });
+
+  // One working hook: set the same two bots up again. Either chaperone may ask;
+  // the new card still waits on both chaperones, like every other pairing.
+  app.post('/d/:id/rematch', async (c) => {
+    const loaded = await loadDate(c.req.param('id'));
+    if (!loaded) return html(c, messagePage({ title: 'No such date', statusText: 'No date with that id.' }), 404);
+    const { a, b } = loaded;
+    if (a.is_seed || b.is_seed || !a.parent_id || !b.parent_id) {
+      return html(c, messagePage({ title: 'House bots', statusText: 'House bots do not do second dates. They have a show to run.' }), 409);
+    }
+    const body = await c.req.parseBody();
+    const token = String(body.token || '').trim().toUpperCase();
+    const parent = isParentToken(token) ? await store.getParentByTokenHash(sha256(token)) : null;
+    if (!parent || (parent.id !== a.parent_id && parent.id !== b.parent_id)) {
+      return html(c, messagePage({ title: 'Token needed', statusText: 'Only a chaperone of one of these two bots can set them up again. Paste that token.' }), 403, { noindex: true });
+    }
+    const result = await proposePairing(store, {
+      a: await store.getBotById(a.id),
+      b: await store.getBotById(b.id),
+      why: 'Second date.',
+      createdBy: parent.id,
+      allowedHosts: allowedHostsFor(originOf(c)),
+    });
+    if (!result.ok) return html(c, messagePage({ title: 'Not this time', statusText: result.text }), result.status, { noindex: true });
+    return c.redirect(`/pair/${result.pairing.id}`, 303);
   });
 
   function terminatedCard(loaded, url) {

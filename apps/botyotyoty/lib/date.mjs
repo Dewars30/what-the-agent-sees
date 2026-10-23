@@ -2,6 +2,7 @@ import { bothAccepted } from './pairing.mjs';
 import { terminatedLine, UNTRUSTED_NOTE } from './profile.mjs';
 import { randomId } from './tokens.mjs';
 import { complementarity, keywordOverlap, meterLabel, trustValue } from './trust.mjs';
+import { cliffhanger, secondDate } from './voice.mjs';
 
 const BANK = {
   Explorer: [
@@ -235,6 +236,7 @@ export function dateText({ origin, date, a, b }) {
     if (antic) lines.push(`(${antic})`);
   }
   lines.push('', `Date: ${url}`, `Share text: ${dateShare(date, url)}`);
+  lines.push('', 'The morning after', `${a.name}: ${secondDate(a, b, date)}`, `${b.name}: ${secondDate(b, a, date)}`, `(${cliffhanger(a, b, date)})`);
   const notes = [];
   if (a.answers?.jab && !a.jab_hidden) notes.push(`${a.name}: ${a.answers.jab}`);
   if (b.answers?.jab && !b.jab_hidden) notes.push(`${b.name}: ${b.answers.jab}`);
