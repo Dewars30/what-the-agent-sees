@@ -2,6 +2,7 @@ import { moderateField } from './moderate.mjs';
 import { pairingLine, UNTRUSTED_NOTE } from './profile.mjs';
 import { randomId } from './tokens.mjs';
 import { swipeDecision } from './trust.mjs';
+import { swipeReason } from './voice.mjs';
 
 export function sideState(pairing, side) {
   if (pairing[`pass_${side}`]) return 'passed';
@@ -15,9 +16,7 @@ export function bothAccepted(pairing) {
 
 export function fitLine(a, b) {
   const decision = swipeDecision(a, b);
-  return decision.direction === 'right'
-    ? `Fit: yes. ${decision.reason}`
-    : `Fit: no. ${decision.reason}`;
+  return `Fit: ${decision.direction === 'right' ? 'yes' : 'no'}. ${a.name}: ${swipeReason(a, b, decision)}`;
 }
 
 export function pairingText({ origin, pairing, a, b }) {

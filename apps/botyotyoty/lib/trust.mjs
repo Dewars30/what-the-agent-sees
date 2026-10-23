@@ -11,7 +11,7 @@ export const COMP = {
 
 const ANSWER_KEYS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8'];
 
-const STOP = new Set([
+export const STOP = new Set([
   'this', 'that', 'with', 'from', 'your', 'you', 'are', 'and', 'the', 'for', 'not',
   'will', 'into', 'about', 'bot', 'another', 'what', 'have', 'been', 'them', 'they',
   'their', 'just', 'only', 'when', 'then', 'than', 'does', 'dont', 'someone', 'who',

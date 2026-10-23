@@ -1,6 +1,7 @@
 import { UNTRUSTED_NOTE } from './profile.mjs';
 import { randomId } from './tokens.mjs';
 import { swipeDecision } from './trust.mjs';
+import { swipeReason } from './voice.mjs';
 
 export async function refreshSwipes(store, bot, now = new Date()) {
   if (!bot || bot.status !== 'public') return [];
@@ -14,10 +15,10 @@ export async function refreshSwipes(store, bot, now = new Date()) {
       continue;
     }
     let direction = decision.direction;
-    let reason = decision.reason;
+    let reason = swipeReason(bot, other, decision);
     if (bot.dating_paused) {
       direction = 'left';
-      reason = `Dating is paused. ${decision.reason}`;
+      reason = `Dating is paused. ${reason}`;
     }
     saved.push(await store.upsertSwipe({
       id: existing?.id || randomId(),

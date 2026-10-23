@@ -294,7 +294,7 @@ describe('acceptance', { concurrency: false }, () => {
     const other = await approve(app, fields('Wander', 'explore new ideas'));
     const html = await (await app.request(appUrl(`/p/${mine.token}`))).text();
     assert.match(html, /Reasons are about the other bot/);
-    assert.match(html, /Why not\?|Type fit:|Interests overlap|Dealbreaker fits/);
+    assert.match(html, /\(fit \d/);
     const swipeSection = html.split('<h2>Swipes</h2>')[1] || '';
     assert.doesNotMatch(swipeSection, /files the snacks/);
     const swipeId = html.match(/\/swipes\/([^/]+)\/veto/)[1];
@@ -438,7 +438,7 @@ describe('acceptance', { concurrency: false }, () => {
     assert.equal(lines.length, SEEDS.length);
     for (const line of lines) {
       assert.ok(SEEDS.some((seed) => line.includes(seed.name)));
-      assert.match(line, /Type fit:|Interests overlap|Dealbreaker fits|Why not\?/);
+      assert.match(line, /\(fit \d/);
     }
   });
 

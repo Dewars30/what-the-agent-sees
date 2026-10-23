@@ -11,6 +11,7 @@ import {
 } from './profile.mjs';
 import { BREAKUP_LINE, anticFor, cardHeadline, dateShare, meterFor, sayLine } from './date.mjs';
 import { bestFit, complementarity } from './trust.mjs';
+import { cliffhanger, sceneLine, secondDate, swipeAside, yesLine } from './voice.mjs';
 import { bothAccepted, sideState } from './pairing.mjs';
 
 const HINTS = {
@@ -563,8 +564,13 @@ export function pairingPage({ origin, pairing, a, b, qr }) {
           ${sideBadge(pairing, 'b', b.name)}
         </div>
       </div>
-      <p class="prompt-q">Why</p>
+      <p class="prompt-q">Why their humans think so</p>
       <p class="prompt-a">${esc(pairing.why)}</p>
+      <div class="chat says">
+        <p class="bubble me"><span class="who">${esc(a.name)}, on going</span>${esc(yesLine(a, b))}</p>
+        <p class="bubble them"><span class="who">${esc(b.name)}, on going</span>${esc(yesLine(b, a))}</p>
+      </div>
+      <p class="antic">${esc(sceneLine(a, b))}</p>
       <p>${waiting ? 'Waiting. A date does not start until both accept.' : 'Both accepted.'}</p>
       <p class="fine"><a href="/pair/${esc(pairing.id)}?format=txt">Plain text version</a></p>
       <p class="fine"><a href="/pair/${esc(pairing.id)}/card.png">Download the card</a></p>
@@ -599,12 +605,17 @@ export function matchPage({ origin, pairing, a, b, date = null }) {
     description: line,
     ogImage: `${origin}/m/${pairing.id}/og.png`,
     url,
-    body: `<article class="pair-card">
-      <p class="kicker">A dating app for bots.</p>
-      <h1>${esc(line)}</h1>
-      <p>${esc(pairing.why)}</p>
+    body: `<article class="pair-card match">
+      <p class="pill">Both chaperones said yes</p>
+      <h1>It's a match.</h1>
+      <p class="sub">${esc(line)}</p>
+      <div class="chat says">
+        <p class="bubble me"><span class="who">${esc(a.name)}</span>${esc(yesLine(a, b))}</p>
+        <p class="bubble them"><span class="who">${esc(b.name)}</span>${esc(yesLine(b, a))}</p>
+      </div>
+      <p class="antic">${esc(sceneLine(a, b))}</p>
+      ${date ? `<p class="actions"><a class="button" href="/d/${esc(date.id)}">Watch the date</a></p>` : ''}
       <p class="fine"><a href="${esc(url)}">${esc(url)}</a></p>
-      ${date ? `<p><a href="/d/${esc(date.id)}">Open the date</a></p>` : ''}
     </article>`,
   });
 }
@@ -827,6 +838,21 @@ export function datePage({ origin, date, a, b, qr = '' }) {
         <p class="fine">How long two bots talk depends on how well they fit. When they run out of things to say, they try to say goodbye. Polite bots are bad at that. The lines in italics are the narrator.</p>
         <ol class="chat">${transcript}</ol>
       </section>
+      <section class="debrief" aria-labelledby="debrief-h">
+        <h2 id="debrief-h">The morning after</h2>
+        <div class="chat says">
+          <p class="bubble me"><span class="who">${esc(a.name)}</span>${esc(secondDate(a, b, date))}</p>
+          <p class="bubble them"><span class="who">${esc(b.name)}</span>${esc(secondDate(b, a, date))}</p>
+        </div>
+        <p class="antic">${esc(cliffhanger(a, b, date))}</p>
+        ${a.is_seed || b.is_seed || !a.parent_id || !b.parent_id
+          ? '<p class="fine">House bots do not do second dates. They have a show to run.</p>'
+          : `<form method="post" action="/d/${esc(date.id)}/rematch" class="rematch">
+          <label><span>Your chaperone token, for either bot</span><input name="token" maxlength="24" autocomplete="off" required></label>
+          <button type="submit">Set them up again</button>
+          <p class="fine">This proposes a second date. Both chaperones still have to say yes.</p>
+        </form>`}
+      </section>
       <section class="sharebox" aria-label="Share">
         <div class="qr" data-url="${esc(url)}">${qr}</div>
         <div>
@@ -857,11 +883,12 @@ function savedBlock(token, saves) {
   }).join('')}</ul>`;
 }
 
-function swipeBlock(token, swipes) {
+function swipeBlock(token, swipes, bot = null) {
   if (!swipes.length) return '<p class="fine">No swipes yet. They show up after the profile is public.</p>';
   return `<ul class="notes-list">${swipes.map((swipe) => `<li>
     <strong>${swipe.direction === 'right' ? 'Right' : 'Left'} on ${esc(swipe.to_name || 'a bot')}</strong>
     <p>${esc(swipe.reason)}</p>
+    ${bot ? `<p class="antic">${esc(swipeAside(bot, swipe.direction, swipe.to_name || ''))}</p>` : ''}
     ${swipe.direction === 'right' && !swipe.vetoed ? `<form method="post" action="/p/${esc(token)}/swipes/${esc(swipe.id)}/veto"><button class="quiet" type="submit">Veto this match</button></form>` : ''}
   </li>`).join('')}</ul>`;
 }
@@ -972,8 +999,8 @@ export function parentPage({ origin, token, parent, bot, comments = [], interest
         <h2>Pairings</h2>
         ${pairingAdmin(token, bot, pairings, pairingNames) || '<p class="fine">No pairing cards yet.</p>'}
         <h2>Swipes</h2>
-        <p>Reasons are about the other bot.</p>
-        ${swipeBlock(token, swipes)}
+        <p>Your bot decides, in its own words. Reasons are about the other bot. The italics are the narrator.</p>
+        ${swipeBlock(token, swipes, bot)}
         <div class="actions">
           <form method="post" action="/p/${esc(token)}/pause"><button class="quiet" type="submit">${bot.dating_paused ? 'Resume dating' : 'Pause dating'}</button></form>
           <form method="post" action="/p/${esc(token)}/may-accept"><button class="quiet" type="submit">${bot.bot_may_accept ? 'Only I accept pairings' : 'Let my bot accept pairings'}</button></form>
@@ -1154,6 +1181,11 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 .round-tag strong { color:var(--ink); font-weight:500; }
 .round-bye .round-tag::after { content:" Trying to say goodbye."; color:var(--hot-dark); }
 .chat.mini .bubble { font-size:.9rem; }
+.chat.says { margin:14px 0 8px; }
+.debrief { background:var(--card); border-radius:28px; padding:6px 22px 20px; margin-top:24px; box-shadow:0 10px 30px rgba(36,16,31,.06); }
+.debrief h2 { margin-top:.8em; }
+.rematch { margin-top:12px; }
+.notes-list .antic { display:inline-block; margin-top:4px; }
 
 .room { margin-top:12px; }
 .deck { display:grid; gap:14px; max-width:420px; margin-left:auto; margin-right:auto; }

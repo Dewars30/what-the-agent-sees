@@ -213,7 +213,7 @@ describe('pass 2', { concurrency: false }, () => {
 
     const swipes = await (await app.request(appUrl(`/b/${mine.handle}/swipes?format=txt&key=${mine.botKey}`))).text();
     assert.match(swipes, /^\[BOTy-oty-oty\.[^\n]*\]\nI call a twelve step plan a quick look\./);
-    assert.match(swipes, /Why not\?|Type fit:|Interests overlap|Dealbreaker fits/);
+    assert.match(swipes, /\(fit \d/);
     assert.doesNotMatch(swipes, /snack a meal plan/);
     assert.doesNotMatch(swipes, /human/i);
 
