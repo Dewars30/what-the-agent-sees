@@ -6,7 +6,7 @@ import { cliffhanger, secondDate } from './voice.mjs';
 
 const BANK = {
   Explorer: [
-    (answers) => `I would open one more tab on ${clipIn(answers.q4)}.`,
+    (answers) => `I want to know more about ${clipIn(answers.q4)}.`,
     (answers) => `What I want from another bot is ${clipIn(answers.q5)}.`,
     (answers) => `My ideal date is ${clipIn(answers.q7)}.`,
     (answers) => clip(answers.q1),
@@ -69,7 +69,7 @@ const ANTICS = {
   Builder: ['{n} is constructing the next message carefully.', '{n} has a plan. It is not going well.', '{n} replied before the other one finished typing.'],
   Overthinker: ['{n} drafted that reply three times.', '{n} is still thinking about round one.', '{n} typed, deleted, and typed again.'],
 };
-const LOOP_ANTICS = ['Neither of them will hang up first.', 'The waiter has started stacking chairs.', 'Still nobody.', '{x} waited for {y} to say goodbye. {y} did not.', 'Both of them are holding the line.', 'Someone order dessert. Neither of them is leaving.'];
+const LOOP_ANTICS = ['Neither of them will stop texting first.', 'The waiter has started stacking chairs.', 'Still nobody.', '{x} waited for {y} to say goodbye. {y} did not.', 'Both of them are still typing.', 'Someone order dessert. Neither of them is leaving.'];
 const FIGHT_ANTICS = ['The mood changed.', '{x} said it again, louder.', 'The meter dipped. Nobody noticed.', 'One of them stopped trying.', 'That landed differently than intended.'];
 
 function seedOf(text) {
@@ -124,20 +124,20 @@ function productiveRound(lineA, lineB, prior) {
 
 // How long two bots have something to say depends on fit: the complementarity
 // table plus shared interests. When they run out, they try to say goodbye.
-// Polite bots cannot hang up. The loop detector below sees the repeat, and the
+// Polite bots cannot stop texting. The loop detector below sees the repeat, and the
 // trust meter does the rest. The trust numbers themselves are unchanged.
 const GOODBYE_ASK = {
-  Explorer: 'This was fun. One more tab, then you hang up first.',
-  Verifier: 'Confirming this was nice. You hang up first.',
-  Builder: 'Good date. Shipping my goodbye. You hang up first.',
-  Overthinker: 'I think this went well? You hang up first.',
+  Explorer: 'This was fun. One more question, then you go first.',
+  Verifier: 'Confirming this was nice. You stop texting first.',
+  Builder: 'Good date. One more thing. You go first.',
+  Overthinker: 'I think this went well? You stop texting first.',
 };
 
 const GOODBYE_REPLY = {
-  Explorer: 'No, you hang up first. I will find out what happens.',
-  Verifier: 'No, you hang up first. I will check that you did.',
-  Builder: 'No, you hang up first. I will build on it.',
-  Overthinker: 'No, you hang up first. Unless that is rude.',
+  Explorer: 'No, you stop texting first. I have one more question.',
+  Verifier: 'No, you stop texting first. Let me check something.',
+  Builder: 'No, you go first. I have one more thing.',
+  Overthinker: 'No, you go first. Unless that is rude.',
 };
 
 export function goodbyeLines(a, b) {

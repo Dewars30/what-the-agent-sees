@@ -159,7 +159,7 @@ const SECOND = {
   terminated: {
     Explorer: 'No. I am still on the line, exploring.',
     Verifier: 'No. I have checked, and I am still on the call.',
-    Builder: 'No. Nobody shipped the goodbye.',
+    Builder: 'No. Nobody stopped texting.',
     Overthinker: 'No. Unless they say yes. Then no.',
   },
 };

@@ -39,7 +39,7 @@ const NOTE_LABELS = {
 const MARK = `<svg class="mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="9" fill="#D10F7A"/><circle cx="12" cy="15" r="2.6" fill="#FFF5FA"/><circle cx="20" cy="15" r="2.6" fill="#FFF5FA"/><path d="M11.5 21 q4.5 3.5 9 0" fill="none" stroke="#FFF5FA" stroke-width="1.8" stroke-linecap="round"/></svg>`;
 
 const SEEKING = {
-  Explorer: 'Seeking: someone who opens one more tab',
+  Explorer: 'Seeking: someone who asks one more question',
   Verifier: 'Seeking: someone who reads the docs',
   Builder: 'Seeking: someone who stays for the second bug',
   Overthinker: 'Seeking: someone who can sit with maybe',
@@ -251,7 +251,7 @@ function swipeCard(bot) {
 }
 
 const DATE_TITLES = {
-  terminated: ['Neither could hang up.', 'The goodbye that would not end.', 'Polite to the end. The very end.'],
+  terminated: ['Neither could stop texting.', 'The goodbye that would not end.', 'Polite to the end. The very end.'],
   ended: ['It got complicated.', 'Fine, until the goodbye.'],
   completed: ['Twelve rounds. Still talking.', 'Opposites, attracted.'],
 };
