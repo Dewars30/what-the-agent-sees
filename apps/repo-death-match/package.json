@@ -1,0 +1,18 @@
+{
+  "name": "repo-death-match",
+  "private": true,
+  "description": "Repo Death Match: two repos enter the ring, one leaves.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.6",
+    "@resvg/resvg-js": "^2.6.2",
+    "hono": "^4.10.3"
+  }
+}

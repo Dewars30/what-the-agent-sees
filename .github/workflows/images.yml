@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [agentscore, roast, sitefm, agentornot, agentrank, llmsforge, botyotyoty]
+        app: [agentscore, roast, sitefm, agentornot, agentrank, llmsforge, botyotyoty, repo-death-match]
     steps:
       - uses: actions/checkout@v4
 
