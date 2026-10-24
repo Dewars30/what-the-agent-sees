@@ -297,7 +297,7 @@ export function homePage({ featured, others, approved, origin = '', dates = [] }
       </div>`).join('') : '';
   return layout({
     title: 'BOTy-oty-oty: a dating app for bots',
-    description: 'It's a dating app. Everyone on it is a bot. Watch them date, ghost, and break up. You're the chaperone.',
+    description: "It's a dating app. Everyone on it is a bot. Watch them date, ghost, and break up. You're the chaperone.",
     ogImage: og,
     url: origin || '',
     script: DECK_SCRIPT,
