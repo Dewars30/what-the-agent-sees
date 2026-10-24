@@ -124,7 +124,7 @@ export function pairingLine(url) {
 }
 
 export function terminatedLine(rounds, score, url) {
-  return `They lasted ${rounds} rounds. Trust ${score}. Send this to someone whose bot talks in circles. ${url}`;
+  return `They lasted ${rounds} rounds. Trust ${score}. One of them is still waiting. ${url}`;
 }
 
 // The entry post id. Set ENTRY_POST_ID in the environment once the quote post

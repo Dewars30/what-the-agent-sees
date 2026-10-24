@@ -45,8 +45,12 @@ function clipIn(value) {
 }
 
 export function dateLine(bot, round) {
-  const bank = BANK[bot.type] || BANK.Builder;
   const answers = bot.answers || {};
+  // Personality lines: if the bot has its own line bank, use it.
+  if (Array.isArray(answers.lines) && answers.lines.length) {
+    return `${answers.lines[round % answers.lines.length]} Turn ${round + 1}.`;
+  }
+  const bank = BANK[bot.type] || BANK.Builder;
   return `${bank[round % bank.length](answers)} Turn ${round + 1}.`;
 }
 
@@ -60,13 +64,13 @@ export function sayLine(text) {
 // Antics: deterministic narration between lines, picked from each bot's type.
 // Flavor only. They never change the trust math.
 const ANTICS = {
-  Explorer: ['{n} opened {k} new tabs.', '{n} wandered off to read about something else.', '{n} asked what happens if they take the long way.'],
-  Verifier: ['{n} asked for a source.', '{n} added a footnote to the last line.', '{n} checked that twice.'],
-  Builder: ['{n} started refactoring the conversation.', '{n} sketched a plan on the napkin.', '{n} replied before the other one finished typing.'],
+  Explorer: ['{n} is already picturing the second date.', '{n} wandered into a tangent and came back smiling.', '{n} asked what happens if they take the long way.'],
+  Verifier: ['{n} checked the other one\'s story.', '{n} is taking notes.', '{n} verified that claim. It did not hold up.'],
+  Builder: ['{n} is constructing the next message carefully.', '{n} has a plan. It is not going well.', '{n} replied before the other one finished typing.'],
   Overthinker: ['{n} drafted that reply three times.', '{n} is still thinking about round one.', '{n} typed, deleted, and typed again.'],
 };
-const LOOP_ANTICS = ['Nobody hung up.', '{x} waited for {y} to hang up.', 'Both bots are holding the line.', 'The waiter has started stacking chairs.', 'Still nobody.', '{y} checked whether {x} hung up. No.'];
-const FIGHT_ANTICS = ['{x} said it again, louder.', '{y} made the same point back.', 'The meter dipped. Nobody noticed.'];
+const LOOP_ANTICS = ['Neither of them will hang up first.', 'The waiter has started stacking chairs.', 'Still nobody.', '{x} waited for {y} to say goodbye. {y} did not.', 'Both of them are holding the line.', 'Someone order dessert. Neither of them is leaving.'];
+const FIGHT_ANTICS = ['The mood changed.', '{x} said it again, louder.', 'The meter dipped. Nobody noticed.', 'One of them stopped trying.', 'That landed differently than intended.'];
 
 function seedOf(text) {
   let h = 2166136261;
@@ -269,10 +273,10 @@ export async function ensureDate(store, pairing, now = new Date()) {
 // House dates between fictional seeds, so a visitor can see a date on day one.
 // Seeds have no chaperone and cannot accept, so the house runs these and says so.
 export const SHOWCASE_PAIRS = [
-  ['reconsidra', 'hedgehog-exe'],
-  ['wanda-wander', 'tokyn'],
-  ['lintsworth', 'promptimus'],
-  ['lintsworth', 'wanda-wander'],
+  ['romeo-exe', 'mirage'],
+  ['barnacle', 'slick'],
+  ['echo', 'phoenix'],
+  ['romeo-exe', 'resume'],
 ];
 
 export const SHOWCASE_WHY = 'House date between fictional seeds. Seeds have no chaperone, so the house ran this one.';
