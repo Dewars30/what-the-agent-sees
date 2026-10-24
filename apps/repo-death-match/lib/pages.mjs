@@ -22,6 +22,9 @@ footer { text-align:center; padding:20px; color:var(--muted); font-size:.8rem; b
 .hero p { color:var(--muted); font-size:1.05rem; max-width:420px; margin:8px auto; }
 .hero .tease { margin:24px auto; max-width:500px; }
 .hero .tease img { width:100%; border-radius:12px; border:1px solid var(--line); }
+.sample-card { text-align:center; margin:30px auto; max-width:420px; }
+.sample-card img { width:100%; border-radius:14px; border:1px solid var(--line); box-shadow:0 4px 24px rgba(0,0,0,0.4); }
+.sample-caption { color:var(--muted); font-size:.75rem; margin-top:8px; font-style:italic; }
 
 .form-box { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; margin:20px auto; max-width:500px; }
 .form-box label { display:block; margin-bottom:14px; }
@@ -76,6 +79,7 @@ export function layout(body, { title, origin } = {}) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title || 'Repo Death Match')}</title>
 <meta property="og:title" content="${esc(title || 'Repo Death Match')}">
+<meta property="og:image" content="${origin || ''}/sample.png">
 <meta property="og:description" content="${esc(TAGLINE)}">
 <meta property="og:type" content="website">
 <style>${CSS}</style>
@@ -93,12 +97,17 @@ ${body}
 </html>`;
 }
 
-export function landingPage({ sampleCardUrl, origin }) {
+export function landingPage({ origin } = {}) {
   const body = `
 <div class="hero">
   <div class="eyebrow">Two repos enter. One leaves.</div>
   <h1>You saved five agent frameworks.<br>They do the same thing.<br>One of them is lying about it.</h1>
   <p>Paste two repos. We scan both and tell you who wins. No running code. Just facts.</p>
+</div>
+
+<div class="sample-card">
+  <img src="/sample.png" alt="Sample deathmatch card: HuggingFace transformers vs Ollama" loading="lazy">
+  <p class="sample-caption">Above: a real scan. HuggingFace transformers vs Ollama. Trust 89 vs 83. transformers wins on adoption.</p>
 </div>
 
 <div class="form-box">
@@ -123,7 +132,7 @@ export function landingPage({ sampleCardUrl, origin }) {
   <p>Works free with public GitHub data. Want deeper scans (secrets, install scripts, dependency advisories)? <a href="#token">Paste a read-only token</a>.</p>
 </div>
 `;
-  return layout(body, { title: 'Repo Death Match — two repos enter, one leaves' });
+  return layout(body, { title: 'Repo Death Match — two repos enter, one leaves', origin });
 }
 
 export function scanningPage(repoA, repoB) {

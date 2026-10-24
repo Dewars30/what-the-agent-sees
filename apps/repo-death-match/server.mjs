@@ -2,7 +2,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { parseRepo, scanRepo, RateLimitError } from './lib/scan.mjs';
 import { deathmatch } from './lib/trust.mjs';
-import { deathmatchCardSvg, cardToPng, shareText } from './lib/card.mjs';
+import { sampleCardSvg, deathmatchCardSvg, cardToPng, shareText } from './lib/card.mjs';
 import { landingPage, matchPage, matchPlainText, notFoundPage, errorPage } from './lib/pages.mjs';
 import { fightScanPage } from './lib/fight.mjs';
 
@@ -26,6 +26,21 @@ app.use('*', async (c, next) => {
 app.get('/healthz', (c) => c.text('ok'));
 app.get('/debug', (c) => c.json({ matches: matches.size, counter: matchCounter, keys: [...matches.keys()] }));
 app.get('/favicon.ico', (c) => c.body(null, 204));
+
+// Sample card for landing page
+app.get('/sample.svg', (c) => {
+  const svg = sampleCardSvg();
+  c.header('Content-Type', 'image/svg+xml');
+  c.header('Cache-Control', 'public, max-age=86400');
+  return c.body(svg);
+});
+app.get('/sample.png', (c) => {
+  const svg = sampleCardSvg();
+  const png = cardToPng(svg);
+  c.header('Content-Type', 'image/png');
+  c.header('Cache-Control', 'public, max-age=86400');
+  return c.body(png);
+});
 
 // Landing page
 app.get('/', (c) => {
