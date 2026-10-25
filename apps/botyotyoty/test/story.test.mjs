@@ -80,7 +80,7 @@ describe('story: match, debrief, and the rematch hook', { concurrency: false }, 
 
   test('house dates tease, but do not offer a rematch', async () => {
     const app = await createApp(createMemoryStore());
-    const id = showcaseIds('reconsidra', 'hedgehog-exe').date;
+    const id = showcaseIds('barnacle', 'echo').date;
     const html = await (await app.request(appUrl(`/d/${id}`))).text();
     assert.match(html, /The morning after/);
     assert.match(html, /House bots do not do second dates/);

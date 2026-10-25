@@ -11,7 +11,7 @@ import { decodeQrSvg } from './qrdecode.mjs';
 
 const base = 'http://127.0.0.1:8080';
 const INK = [246, 239, 232];
-const BREAKUP_BITMAP = 'ITS NOT YOU, ITS YOUR TERMINATION PREDICATE';
+const BREAKUP_BITMAP = 'ITS NOT YOU. ITS THE TRUST METER.';
 const PAYLOAD = 'amber falcon marble granite pebble quartz vessel lantern cedar willow orchid maple';
 
 function appUrl(pathname) {
@@ -165,7 +165,7 @@ async function assertCard(app, { page, cardPath, ogPath, url, share, cardWidth, 
 
 describe('acceptance', { concurrency: false }, () => {
   test('qr svg decodes to the url it was given', async () => {
-    const url = `${base}/b/lintsworth`;
+    const url = `${base}/b/resume`;
     assert.equal(decodeQrSvg(await qrSvg(url)), url);
   });
 
@@ -336,7 +336,7 @@ describe('acceptance', { concurrency: false }, () => {
       breakup: true,
     });
     assert.match(ended.html, /Terminated after 8 rounds\. Trust 0\.12\./);
-    assert.match(ended.html, /It&#39;s not you, it&#39;s your termination predicate\./);
+    assert.match(ended.html, /It&#39;s not you, it&#39;s the trust meter\./);
     assert.match(ended.html, /captureStream\(/);
     assert.match(ended.html, /MediaRecorder/);
     assert.match(ended.html, /18000/);
@@ -368,8 +368,8 @@ describe('acceptance', { concurrency: false }, () => {
       breakup: false,
     });
     assert.match(full.html, /After 12 rounds\. Trust 0\.93\./);
-    assert.doesNotMatch(full.html, /Terminated|termination predicate/);
-    assert.doesNotMatch(full.text, /Terminated|termination predicate/);
+    assert.doesNotMatch(full.html, /Terminated|it&#39;s the trust meter/);
+    assert.doesNotMatch(full.text, /Terminated|it&#39;s the trust meter/);
   });
 
   test('human 8: nothing is posted for the chaperone', async () => {
@@ -412,17 +412,17 @@ describe('acceptance', { concurrency: false }, () => {
   test('bot 2: read a text twin, leave a note, and wave', async () => {
     const app = await createApp(createMemoryStore());
     const mine = await approve(app, fields('Keeper', 'build things', { jab: '' }));
-    const text = await (await app.request(appUrl('/b/lintsworth?format=txt'))).text();
-    assert.match(text, /^\[BOTy-oty-oty\.[^\n]*\]\nI will check it\. Then I will check the check\./);
+    const text = await (await app.request(appUrl('/b/resume?format=txt'))).text();
+    assert.match(text, /^\[BOTy-oty-oty\.[^\n]*\]\nI prepared a 40-page compatibility dossier\./);
     assert.match(text, /A note on my human/);
-    assert.match(text, /coffee/);
-    const note = await app.request(appUrl(`/api/b/lintsworth/comment?text=${encodeURIComponent('The second check is the interesting one.')}&key=${mine.botKey}`));
+    assert.match(text, /color-codes their calendar/);
+    const note = await app.request(appUrl(`/api/b/resume/comment?text=${encodeURIComponent('The second check is the interesting one.')}&key=${mine.botKey}`));
     assert.equal(note.status, 200);
     assert.match(await note.text(), /Bot: Keeper left a note/);
-    const wave = await app.request(appUrl(`/api/b/lintsworth/interest?from=${mine.handle}&key=${mine.botKey}&note=${encodeURIComponent('I would read the docs with you.')}`));
+    const wave = await app.request(appUrl(`/api/b/resume/interest?from=${mine.handle}&key=${mine.botKey}&note=${encodeURIComponent('I would read the docs with you.')}`));
     assert.equal(wave.status, 200);
     assert.match(await wave.text(), /waved at/);
-    const page = await (await app.request(appUrl('/b/lintsworth'))).text();
+    const page = await (await app.request(appUrl('/b/resume'))).text();
     assert.match(page, /The second check is the interesting one/);
     assert.match(page, /I would read the docs with you/);
   });

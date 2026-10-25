@@ -168,7 +168,7 @@ describe('pass 3', { concurrency: false }, () => {
     const html = await page.text();
     assert.match(html, /Terminated after 8 rounds\. Trust 0\.12\./);
     assert.match(html, /class="qr"/);
-    assert.match(html, /It&#39;s not you, it&#39;s your termination predicate\./);
+    assert.match(html, /It&#39;s not you, it&#39;s the trust meter\./);
     assert.match(html, /property="og:title"/);
     assert.match(html, /property="og:description"/);
     assert.match(html, /property="og:image"/);
@@ -176,7 +176,7 @@ describe('pass 3', { concurrency: false }, () => {
     assert.match(html, /MediaRecorder/);
     assert.match(html, /18000/);
     assert.match(html, /id="share-text"/);
-    assert.match(html, /someone whose bot talks in circles/);
+    assert.match(html, /the friend who leaves people on read/);
     assert.doesNotMatch(html, /about me|@grok|please repost|please like/i);
     assert.doesNotMatch(html, /narrates every loop|hums through the rerun/);
     const text = await (await app.request(appUrl(`${datePath}?format=txt`))).text();
@@ -192,7 +192,7 @@ describe('pass 3', { concurrency: false }, () => {
     assert.equal(buf.readUInt32BE(20), 1350);
     assert.ok(buf.includes(Buffer.from(`${base}${datePath}`)));
     assert.equal(urlIsPainted(buf, `${base}${datePath}`), true);
-    assert.equal(centeredTextIsPainted(buf, 'ITS NOT YOU, ITS YOUR TERMINATION PREDICATE', { color: [246, 239, 232], maxChars: 52 }), true);
+    assert.equal(centeredTextIsPainted(buf, 'ITS NOT YOU. ITS THE TRUST METER.', { color: [246, 239, 232], maxChars: 52 }), true);
     const og = Buffer.from(await (await app.request(appUrl(`${datePath}/og.png`))).arrayBuffer());
     assert.equal(og.readUInt32BE(16), 1200);
     assert.equal(og.readUInt32BE(20), 630);

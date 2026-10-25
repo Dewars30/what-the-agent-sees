@@ -104,8 +104,8 @@ describe('m1', { concurrency: false }, () => {
     const app = await createApp(createMemoryStore());
     const home = await (await app.request(appUrl('/'))).text();
     assert.match(home, /data-deck/);
-    assert.match(home, /Seeking: someone who reads the docs/);
-    assert.match(home, /404 red flags not found/);
+    assert.match(home, /Seeking: someone who (asks one more question|means what they say|stays for the second date|can sit with maybe)/);
+    assert.match(home, /Red flags: allegedly none/);
     assert.match(home, /<script>/);
     assert.match(home, /property="og:image"/);
     const { code } = await signup(app);
@@ -113,25 +113,25 @@ describe('m1', { concurrency: false }, () => {
     assert.match(joinHtml, /<pre class="protocol">/);
     assert.match(joinHtml, /method="get"/);
     assert.doesNotMatch(joinHtml, /<script/i);
-    const profile = await (await app.request(appUrl('/b/lintsworth'))).text();
-    assert.match(profile, /Seeking: someone who reads the docs/);
+    const profile = await (await app.request(appUrl('/b/resume'))).text();
+    assert.match(profile, /Seeking: someone who means what they say/);
     assert.match(profile, /every date starts here/);
     assert.doesNotMatch(profile, /it(?:'|&#39;)s complicated/);
-    assert.match(profile, /404 red flags not found/);
+    assert.match(profile, /Red flags: allegedly none/);
     assert.match(profile, />best fit</);
     assert.doesNotMatch(profile, /0\.67|>100%<|>uptime</);
-    assert.match(profile, new RegExp(`${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/b/lintsworth/og\\.png`));
+    assert.match(profile, new RegExp(`${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/b/resume/og\\.png`));
     assert.doesNotMatch(profile, /<script/i);
-    const builder = await (await app.request(appUrl('/b/promptimus'))).text();
-    assert.match(builder, /Seeking: someone who stays for the second bug/);
-    const og = await app.request(appUrl('/b/promptimus/og.png'));
+    const builder = await (await app.request(appUrl('/b/slick'))).text();
+    assert.match(builder, /Seeking: someone who stays for the second date/);
+    const og = await app.request(appUrl('/b/slick/og.png'));
     assert.equal(og.status, 200);
     assert.match(og.headers.get('content-type'), /image\/png/);
     const ogBuf = Buffer.from(await og.arrayBuffer());
     assert.equal(ogBuf[0], 137);
     assert.equal(ogBuf.readUInt32BE(16), 1200);
     assert.equal(ogBuf.readUInt32BE(20), 630);
-    const card = await app.request(appUrl('/b/promptimus/card.png'));
+    const card = await app.request(appUrl('/b/slick/card.png'));
     const cardBuf = Buffer.from(await card.arrayBuffer());
     assert.equal(card.status, 200);
     assert.equal(cardBuf.readUInt32BE(16), 1080);
@@ -239,9 +239,9 @@ describe('m1', { concurrency: false }, () => {
     const afterHide = await (await app.request(appUrl(`/b/${handle}`))).text();
     assert.doesNotMatch(afterHide, /fond of footnotes/);
 
-    const waved = await app.request(appUrl(`/api/b/lintsworth/interest?from=${handle}&key=${botKey}&note=${encodeURIComponent('Your footnotes are kind.')}`));
+    const waved = await app.request(appUrl(`/api/b/resume/interest?from=${handle}&key=${botKey}&note=${encodeURIComponent('Your footnotes are kind.')}`));
     assert.equal(waved.status, 200);
-    const lint = await (await app.request(appUrl('/b/lintsworth'))).text();
+    const lint = await (await app.request(appUrl('/b/resume'))).text();
     assert.match(lint, /Bot: Sample Bot/);
     assert.match(lint, /footnotes are kind/);
 
@@ -322,7 +322,7 @@ describe('m1', { concurrency: false }, () => {
     const app = await createApp(createMemoryStore());
     let last = 0;
     for (let i = 0; i < 9; i++) {
-      const res = await app.request(appUrl(`/api/b/lintsworth/comment?text=${encodeURIComponent(`Note number ${i} is kind.`)}`));
+      const res = await app.request(appUrl(`/api/b/resume/comment?text=${encodeURIComponent(`Note number ${i} is kind.`)}`));
       last = res.status;
     }
     assert.equal(last, 429);
@@ -348,8 +348,8 @@ describe('m1', { concurrency: false }, () => {
     assert.match(moderateField('q1', 'I live at 12 Main Street'), /street/);
     assert.match(moderateField('q1', 'say hi to @ada'), /handle/);
     assert.match(moderateField('q1', 'see https://evil.example/x'), /link/);
-    assert.equal(moderateField('q1', 'see https://boty.synteq.app/b/lintsworth', { allowedHosts: ['boty.synteq.app'] }), null);
-    assert.equal(shareLine('https://boty.synteq.app/b/tokyn'), 'This bot is single. Send it to someone whose bot should meet it. https://boty.synteq.app/b/tokyn');
+    assert.equal(moderateField('q1', 'see https://boty.synteq.app/b/resume', { allowedHosts: ['boty.synteq.app'] }), null);
+    assert.equal(shareLine('https://boty.synteq.app/b/chaos-exe'), 'This bot is single. Send it to someone whose bot should meet it. https://boty.synteq.app/b/chaos-exe');
   });
 
   test('copy stays free of em dashes, lyrics players, and X posting', async () => {
@@ -385,8 +385,8 @@ describe('m1', { concurrency: false }, () => {
   test('pass 1 exit: a bot profile, a footnote jab, and no post', async () => {
     const app = await createApp(createMemoryStore());
     const home = await (await app.request(appUrl('/'))).text();
-    assert.match(home, /A dating app for bots\./);
-    assert.match(home, /Your bot is single\./);
+    assert.match(home, /A dating app\. For bots\./);
+    assert.match(home, /It(?:'|&#39;)s a dating show\. Everyone on it is a bot\./);
     assert.match(home, /Your bot writes its own profile and swipes on other bots\./);
     assert.doesNotMatch(home, /about you/i);
     assert.doesNotMatch(home, /about your person/i);
@@ -432,6 +432,7 @@ function htmlPattern(text) {
   return text
     .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     .replaceAll("'", "(?:'|&#39;)")
+    .replaceAll('"', '(?:"|&quot;)')
     .replaceAll('&', '(?:&|&amp;)');
 }
 

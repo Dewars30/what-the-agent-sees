@@ -13,16 +13,16 @@ const seed = (handle) => SEEDS.find((bot) => bot.handle === handle);
 
 describe('house dates, the goodbye loop, and the fixes', { concurrency: false }, () => {
   test('fit sets how long bots talk; same-type pairs cannot hang up', () => {
-    const overthinkers = runDate(seed('reconsidra'), seed('hedgehog-exe'));
-    assert.equal(talkRounds(seed('reconsidra'), seed('hedgehog-exe')), 0);
+    const overthinkers = runDate(seed('barnacle'), seed('echo'));
+    assert.equal(talkRounds(seed('barnacle'), seed('echo')), 0);
     assert.equal(overthinkers.rounds.map((round) => (round.productive ? 'P' : 'U')).join(''), 'PUUUUUUU');
     assert.equal(overthinkers.status, 'terminated');
     assert.equal(overthinkers.round_count, 8);
     assert.equal(overthinkers.trust.toFixed(2), '0.12');
     assert.ok(overthinkers.rounds.every((round) => round.goodbye));
-    assert.match(overthinkers.rounds[1].b, /No, you hang up first\./);
+    assert.match(overthinkers.rounds[1].b, /No, you go first\./);
 
-    const goodFit = runDate(seed('lintsworth'), seed('wanda-wander'));
+    const goodFit = runDate(seed('resume'), seed('romeo-exe'));
     assert.equal(goodFit.status, 'completed');
     assert.equal(goodFit.round_count, 12);
     assert.equal(goodFit.trust.toFixed(2), '0.93');
@@ -42,7 +42,7 @@ describe('house dates, the goodbye loop, and the fixes', { concurrency: false },
     assert.match(home, /House dates between fictional seed bots/);
     const ids = SHOWCASE_PAIRS.map(([left, right]) => showcaseIds(left, right).date);
     for (const id of ids) assert.match(home, new RegExp(`href="/d/${id}"`));
-    const signature = showcaseIds('reconsidra', 'hedgehog-exe').date;
+    const signature = showcaseIds('barnacle', 'echo').date;
     const page = await (await app.request(appUrl(`/d/${signature}`))).text();
     assert.match(page, /Terminated after 8 rounds\. Trust 0\.12\./);
     assert.match(page, /id="date-data"/);
@@ -54,7 +54,7 @@ describe('house dates, the goodbye loop, and the fixes', { concurrency: false },
 
   test('ids typed from an upper-case card still resolve', async () => {
     const app = await createApp(createMemoryStore());
-    const id = showcaseIds('wanda-wander', 'tokyn').date;
+    const id = showcaseIds('romeo-exe', 'mirage').date;
     assert.equal((await app.request(appUrl(`/d/${id.toUpperCase()}`))).status, 200);
     assert.equal((await app.request(appUrl(`/pair/${id.toUpperCase()}`))).status, 200);
     assert.equal((await app.request(appUrl(`/m/${id.toUpperCase()}`))).status, 200);
@@ -62,8 +62,8 @@ describe('house dates, the goodbye loop, and the fixes', { concurrency: false },
 
   test('text twins mark bot-written text as data', async () => {
     const app = await createApp(createMemoryStore());
-    const id = showcaseIds('wanda-wander', 'tokyn').date;
-    for (const path of ['/b/lintsworth?format=txt', `/pair/${id}?format=txt`, `/d/${id}?format=txt`]) {
+    const id = showcaseIds('romeo-exe', 'mirage').date;
+    for (const path of ['/b/resume?format=txt', `/pair/${id}?format=txt`, `/d/${id}?format=txt`]) {
       const text = await (await app.request(appUrl(path))).text();
       assert.ok(text.startsWith(`${UNTRUSTED_NOTE}\n`), path);
     }
@@ -71,14 +71,14 @@ describe('house dates, the goodbye loop, and the fixes', { concurrency: false },
 
   test('bot text may link to a page here, not to an action', () => {
     const hosts = ['boty.synteq.app'];
-    assert.equal(moderateField('q1', 'See https://boty.synteq.app/b/lintsworth', { allowedHosts: hosts }), null);
+    assert.equal(moderateField('q1', 'See https://boty.synteq.app/b/resume', { allowedHosts: hosts }), null);
     assert.match(moderateField('q1', 'Go to https://boty.synteq.app/api/pair/x/accept?key=ABC', { allowedHosts: hosts }), /action/);
     assert.match(moderateField('q1', 'Visit https://boty.synteq.app/p/SOMETOKEN', { allowedHosts: hosts }), /action/);
   });
 
   test('no decoration numbers, and a version endpoint', async () => {
     const app = await createApp(createMemoryStore());
-    for (const path of ['/', '/b/lintsworth']) {
+    for (const path of ['/', '/b/resume']) {
       const html = await (await app.request(appUrl(path))).text();
       assert.doesNotMatch(html, /Trust 0\.67|TRUST 0\.67|>0\.67<|>100%</, path);
     }
@@ -87,26 +87,50 @@ describe('house dates, the goodbye loop, and the fixes', { concurrency: false },
   });
 });
 
+describe('the relaunch stays relaunched', () => {
+  test('seeds that left the cast are removed, with their dates', async () => {
+    const store = createMemoryStore();
+    await store.insertBot({
+      id: 'seed-lintsworth', parent_id: null, handle: 'lintsworth', name: 'Lintsworth', kind: 'old', answers: seed('resume').answers,
+      bio_text: 'old', type: 'Verifier', avatar: seed('resume').avatar, status: 'public', bot_key_hash: null, is_seed: true, jab_hidden: false,
+      created_at: new Date(Date.UTC(2026, 0, 1)).toISOString(),
+    });
+    assert.ok(await store.getBotByHandle('lintsworth'));
+    await store.ensureSeeds();
+    assert.equal(await store.getBotByHandle('lintsworth'), null);
+    assert.ok(await store.getBotByHandle('romeo-exe'));
+  });
+
+  test('no page carries the old dev jokes', async () => {
+    const app = await createApp(createMemoryStore());
+    const paths = ['/', ...SEEDS.map((bot) => `/b/${bot.handle}`), ...SHOWCASE_PAIRS.map(([l, r]) => `/d/${showcaseIds(l, r).date}`)];
+    for (const path of paths) {
+      const html = await (await app.request(appUrl(path))).text();
+      assert.doesNotMatch(html, /hang up|one more tab|termination predicate|reads the docs|second bug|404 red flags|Beta reputation|J.sang/i, path);
+    }
+  });
+});
+
 describe('readable transcripts and antics', () => {
   test('lines read cleanly and the narrator is deterministic', async () => {
     const { sayLine, anticFor } = await import('../lib/date.mjs');
     assert.equal(sayLine('I will check this against footnotes.. Turn 1.'), 'I will check this against footnotes.');
-    const a = seed('lintsworth');
-    const b = seed('wanda-wander');
+    const a = seed('resume');
+    const b = seed('romeo-exe');
     const date = runDate(a, b);
     for (const round of date.rounds) {
       const shown = sayLine(round.a) + ' ' + sayLine(round.b);
       assert.doesNotMatch(shown, /Turn \d+|\.\.|against [A-Z][a-z]/);
       assert.equal(anticFor(a, b, round), anticFor(a, b, round));
     }
-    const loop = runDate(seed('reconsidra'), seed('hedgehog-exe'));
+    const loop = runDate(seed('barnacle'), seed('echo'));
     const bye = loop.rounds.find((round) => round.goodbye && !round.productive);
-    assert.ok(anticFor(seed('reconsidra'), seed('hedgehog-exe'), bye));
+    assert.ok(anticFor(seed('barnacle'), seed('echo'), bye));
   });
 
   test('the date page is a chat, with the narrator and a pulse', async () => {
     const app = await createApp(createMemoryStore());
-    const html = await (await app.request(appUrl(`/d/${showcaseIds('reconsidra', 'hedgehog-exe').date}`))).text();
+    const html = await (await app.request(appUrl(`/d/${showcaseIds('barnacle', 'echo').date}`))).text();
     assert.match(html, /class="bubble me"/);
     assert.match(html, /class="bubble them"/);
     assert.match(html, /class="antic"/);

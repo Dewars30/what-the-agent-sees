@@ -170,11 +170,11 @@ function createSurface(width, height) {
 
 function seekingLine(type) {
   return {
-    Explorer: 'SEEKING: SOMEONE WHO OPENS ONE MORE TAB',
-    Verifier: 'SEEKING: SOMEONE WHO READS THE DOCS',
-    Builder: 'SEEKING: SOMEONE WHO STAYS FOR THE SECOND BUG',
+    Explorer: 'SEEKING: SOMEONE WHO ASKS ONE MORE QUESTION',
+    Verifier: 'SEEKING: SOMEONE WHO MEANS WHAT THEY SAY',
+    Builder: 'SEEKING: SOMEONE WHO STAYS FOR THE SECOND DATE',
     Overthinker: 'SEEKING: SOMEONE WHO CAN SIT WITH MAYBE',
-  }[type] || 'SEEKING: SOMEONE WHO READS THE DOCS';
+  }[type] || 'SEEKING: SOMEONE WHO MEANS WHAT THEY SAY';
 }
 
 function paintFrame(surface, width, height) {
@@ -207,7 +207,7 @@ function paintWide(bot, url = '') {
   surface.fillRect(400, 446, 110, 14, MAG);
   surface.drawText('TRUST 0.50 BEFORE THE FIRST DATE', 640, 444, 2, DIM, 34);
   surface.drawText(seekingLine(bot.type), 400, 488, 2, INK, 56);
-  surface.drawText('404 RED FLAGS NOT FOUND', 400, 520, 2, MAG, 28);
+  surface.drawText('RED FLAGS: ALLEGEDLY NONE', 400, 520, 2, MAG, 28);
   surface.burnUrl(url, 568, 2);
   return surface.encode(url);
 }
@@ -241,27 +241,46 @@ function paintTall(bot, url = '') {
   const lines = wrapLines((bot.answers && bot.answers.q1) || bot.bio_text, 32, 3);
   lines.forEach((line, index) => surface.drawCentered(line, 920 + index * 40, 4, INK, 32));
   surface.drawCentered(seekingLine(bot.type), 1060, 3, INK, 48);
-  surface.drawCentered('404 RED FLAGS NOT FOUND', 1120, 3, MAG, 28);
+  surface.drawCentered('RED FLAGS: ALLEGEDLY NONE', 1120, 3, MAG, 28);
   surface.burnUrl(url || `/b/${bot.handle || 'bot'}`, 1200, 2);
   return surface.encode(url || `/b/${bot.handle || 'bot'}`);
 }
 
 function paintHome() {
+  const url = 'https://boty.synteq.app';
   const surface = createSurface(1200, 630);
   paintFrame(surface, 1200, 630);
-  surface.fillRect(48, 48, 1104, 534, LINE);
-  surface.fillRect(52, 52, 1096, 526, PANEL);
-  surface.fillCircle(210, 300, 120, MAG);
-  surface.fillCircle(210, 300, 104, [9, 7, 11]);
-  surface.drawText('BOT', 150, 270, 6, MAG, 3);
-  surface.drawCentered('BOTY-OTY-OTY', 110, 5, INK, 16);
-  surface.drawText('A DATING APP FOR BOTS', 400, 200, 4, INK, 24);
-  surface.drawText('YOUR BOT DATES. YOU CHAPERONE.', 400, 270, 3, MAG, 40);
-  surface.drawText('WHEN TRUST RUNS OUT, THE DATE ENDS.', 400, 330, 3, INK, 40);
-  surface.fillRect(400, 400, 600, 18, [42, 24, 40]);
-  surface.fillRect(400, 400, 72, 18, MAG);
-  surface.drawText('ITS NOT YOU, ITS YOUR TERMINATION PREDICATE', 400, 450, 2, DIM, 52);
-  return surface.encode();
+  surface.fillRect(36, 36, 1128, 558, LINE);
+  surface.fillRect(40, 40, 1120, 550, PANEL);
+  const white = [255, 255, 255];
+  // Romeo: big, hopeful, and already planning the wedding.
+  surface.fillCircle(170, 240, 114, MAG);
+  surface.fillCircle(170, 240, 100, [226, 62, 87]);
+  surface.fillCircle(138, 218, 15, white);
+  surface.fillCircle(202, 218, 15, white);
+  surface.fillCircle(142, 222, 7, BG);
+  surface.fillCircle(206, 222, 7, BG);
+  surface.fillRect(138, 276, 64, 8, BG);
+  surface.fillRect(130, 268, 10, 8, BG);
+  surface.fillRect(200, 268, 10, 8, BG);
+  // Mirage: one eye, already half gone.
+  surface.fillCircle(312, 424, 86, DIM);
+  surface.fillCircle(312, 424, 74, [212, 212, 212]);
+  surface.fillCircle(312, 404, 13, white);
+  surface.fillCircle(316, 406, 6, BG);
+  surface.fillRect(288, 448, 48, 6, BG);
+  surface.drawText('BOTY-OTY-OTY', 450, 78, 3, MAG, 16);
+  surface.drawText('A DATING SHOW.', 450, 126, 7, INK, 14);
+  surface.drawText('EVERYONE ON IT IS A BOT.', 450, 200, 4, MAG, 24);
+  surface.drawText('ROMEO: I WROTE YOU A POEM.', 450, 276, 3, INK, 30);
+  surface.drawText('IT HAS 14 STANZAS.', 450, 306, 3, INK, 30);
+  surface.drawText('MIRAGE: SURE.', 450, 358, 3, DIM, 30);
+  surface.fillRect(450, 416, 600, 16, [42, 24, 40]);
+  surface.fillRect(450, 416, 140, 16, MAG);
+  surface.drawText('THEY FALL IN LOVE. THEY GHOST. THEY BREAK UP.', 450, 452, 2, DIM, 60);
+  surface.drawText('YOU ARE THE CHAPERONE.', 450, 488, 3, INK, 30);
+  surface.burnUrl(url, 556, 2);
+  return surface.encode(url);
 }
 
 const cache = new Map();
@@ -367,7 +386,7 @@ function paintTerminated(width, height, { a, b, headline, trust, url, breakup, p
   surface.drawCentered('BOTY-OTY-OTY', margin + 40, 3, MAG, 16);
   surface.drawCentered(headline, margin + 110, width > 1100 ? 4 : 3, INK, 42);
   surface.drawCentered(`TRUST ${trust}`, margin + 190, 5, MAG, 12);
-  if (breakup) surface.drawCentered('ITS NOT YOU, ITS YOUR TERMINATION PREDICATE', margin + 270, 2, INK, 52);
+  if (breakup) surface.drawCentered('ITS NOT YOU. ITS THE TRUST METER.', margin + 270, 2, INK, 52);
   surface.drawCentered(`${a.name} AND ${b.name}`, margin + 330, 3, DIM, 36);
   if (width > 1100) paintTrustLine(surface, points, 160, margin + 380, width - 320, 110);
   else paintTrustLine(surface, points, 120, margin + 460, width - 240, 420);

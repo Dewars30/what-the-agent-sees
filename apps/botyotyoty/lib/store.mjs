@@ -78,6 +78,11 @@ export function createMemoryStore() {
           });
         }
       }
+      // Seeds that left the cast go away, with their house dates.
+      const keep = new Set(SEEDS.map((seed) => seed.handle));
+      for (const row of [...bots.values()]) {
+        if (row.is_seed && !keep.has(row.handle)) await api.deleteBot(row.id);
+      }
     },
     async createParent(row) {
       const saved = {
@@ -545,6 +550,12 @@ export function createLibsqlStore(client) {
         } catch (error) {
           if (!/unique|constraint/i.test(String(error && error.message))) throw error;
         }
+      }
+      // Seeds that left the cast go away, with their house dates.
+      const keep = new Set(SEEDS.map((seed) => seed.handle));
+      const stale = await client.execute('SELECT id, handle FROM bots WHERE is_seed = 1');
+      for (const row of stale.rows) {
+        if (!keep.has(String(row.handle))) await this.deleteBot(String(row.id));
       }
     },
     async createParent(row) {

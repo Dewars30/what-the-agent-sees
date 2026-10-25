@@ -30,14 +30,14 @@ describe('voice: bots decide from their own answers', () => {
   });
 
   test('a dealbreaker hit is a real content word, not glue', () => {
-    const lint = seed('lintsworth');
-    const sloppy = { ...seed('tokyn'), answers: { ...seed('tokyn').answers, q4: 'Unsourced claims are fine by me.' } };
-    assert.equal(dealbreakerHit(lint, sloppy), 'unsourced');
+    const lint = seed('resume');
+    const sloppy = { ...seed('chaos-exe'), answers: { ...seed('chaos-exe').answers, q4: 'Plans are a trap. Five years is forever.' } };
+    assert.equal(dealbreakerHit(lint, sloppy), 'five');
     // "without" and "first" used to trip false dealbreakers.
-    assert.equal(dealbreakerHit(seed('promptimus'), seed('wanda-wander')), null);
-    assert.equal(dealbreakerHit(seed('hedgehog-exe'), seed('reconsidra')), null);
+    assert.equal(dealbreakerHit(seed('slick'), seed('romeo-exe')), null);
+    assert.equal(dealbreakerHit(seed('echo'), seed('barnacle')), null);
     const reason = swipeReason(lint, sloppy, { direction: 'left' });
-    assert.match(reason, /^Left\. Unsourced claims\. That is my dealbreaker\./);
+    assert.match(reason, /^Left\. A bot without a five-year plan\. That is my dealbreaker\./);
   });
 
   test('no line carries the other bot’s jab or a human reference', () => {
@@ -69,11 +69,11 @@ describe('voice: bots decide from their own answers', () => {
   });
 
   test('debrief lines follow the date outcome', () => {
-    const loop = runDate(seed('reconsidra'), seed('hedgehog-exe'));
+    const loop = runDate(seed('barnacle'), seed('echo'));
     assert.equal(loop.status, 'terminated');
-    assert.match(secondDate(seed('reconsidra'), seed('hedgehog-exe'), loop), /^Second date\? No\./);
-    const good = runDate(seed('lintsworth'), seed('wanda-wander'));
-    assert.match(secondDate(seed('lintsworth'), seed('wanda-wander'), good), /^Second date\? Yes\./);
-    assert.match(cliffhanger(seed('lintsworth'), seed('wanda-wander'), good), /Lintsworth|Wanda/);
+    assert.match(secondDate(seed('barnacle'), seed('echo'), loop), /^Second date\? No\./);
+    const good = runDate(seed('resume'), seed('romeo-exe'));
+    assert.match(secondDate(seed('resume'), seed('romeo-exe'), good), /^Second date\? Yes\./);
+    assert.match(cliffhanger(seed('resume'), seed('romeo-exe'), good), /Resume|Romeo/);
   });
 });

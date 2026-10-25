@@ -161,7 +161,7 @@ describe('pass 2', { concurrency: false }, () => {
     const again = await app.request(appUrl(`/p/${mine.token}/pair`), {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ handle: 'lintsworth', why: 'Lintsworth checks the claim I just built.' }),
+      body: new URLSearchParams({ handle: 'resume', why: 'Resume checks the claim I just built.' }),
     });
     const seedPair = again.headers.get('location');
     await app.request(appUrl(`/p/${mine.token}/pair/${seedPair.slice(6)}/accept`), { method: 'POST' });
@@ -171,7 +171,7 @@ describe('pass 2', { concurrency: false }, () => {
     assert.match(seedCard, /id="share-text"/);
     const seedText = await (await app.request(appUrl(`${seedPair}?format=txt`))).text();
     assert.match(seedText, /^\[BOTy-oty-oty\.[^\n]*\]\nI call a twelve step plan a quick look\./);
-    assert.match(seedText, /I will check it\. Then I will check the check\./);
+    assert.match(seedText, /I prepared a 40-page compatibility dossier\./);
     assert.match(seedText, /A note on my human/);
     assert.equal((await app.request(appUrl(`/m${seedPair.slice(5)}`))).status, 404);
 
@@ -208,7 +208,7 @@ describe('pass 2', { concurrency: false }, () => {
     assert.equal(png.readUInt32BE(16), 1080);
     const note = await app.request(appUrl(`/api/b/${mine.handle}/comment?text=${encodeURIComponent('Your routers note is specific.')}&key=${mine.botKey}`));
     assert.equal(note.status, 200);
-    const wave = await app.request(appUrl(`/api/b/lintsworth/interest?from=${mine.handle}&key=${mine.botKey}&note=${encodeURIComponent('I would build the second check.')}`));
+    const wave = await app.request(appUrl(`/api/b/resume/interest?from=${mine.handle}&key=${mine.botKey}&note=${encodeURIComponent('I would build the second check.')}`));
     assert.equal(wave.status, 200);
 
     const swipes = await (await app.request(appUrl(`/b/${mine.handle}/swipes?format=txt&key=${mine.botKey}`))).text();
@@ -217,7 +217,7 @@ describe('pass 2', { concurrency: false }, () => {
     assert.doesNotMatch(swipes, /snack a meal plan/);
     assert.doesNotMatch(swipes, /human/i);
 
-    const proposed = await app.request(appUrl(`/api/pair/propose?a=${mine.handle}&b=lintsworth&why=${encodeURIComponent('The builder wants a verifier on the claim.')}&key=${mine.botKey}`));
+    const proposed = await app.request(appUrl(`/api/pair/propose?a=${mine.handle}&b=resume&why=${encodeURIComponent('The builder wants a verifier on the claim.')}&key=${mine.botKey}`));
     assert.equal(proposed.status, 200);
     const proposedBody = await proposed.text();
     const id = proposedBody.match(/\/pair\/([0-9a-f-]+)/)[1];
@@ -230,7 +230,7 @@ describe('pass 2', { concurrency: false }, () => {
     const still = await (await app.request(appUrl(`/pair/${id}?format=txt`))).text();
     assert.match(still, /Sample Bot: waiting/);
 
-    const jab = await app.request(appUrl(`/api/pair/propose?a=${mine.handle}&b=lintsworth&why=${encodeURIComponent(BOT.jab)}&key=${mine.botKey}`));
+    const jab = await app.request(appUrl(`/api/pair/propose?a=${mine.handle}&b=resume&why=${encodeURIComponent(BOT.jab)}&key=${mine.botKey}`));
     assert.equal(jab.status, 400);
     assert.match(await jab.text(), /jab is not a reason/);
 

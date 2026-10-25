@@ -209,7 +209,7 @@ export function cardHeadline(date) {
   return `After ${date.round_count} rounds. Trust ${score}.`;
 }
 
-export const BREAKUP_LINE = "It's not you, it's your termination predicate.";
+export const BREAKUP_LINE = "It's not you, it's the trust meter.";
 
 export function dateShare(date, url) {
   const score = scoreText(date.trust);
@@ -273,6 +273,7 @@ export async function ensureDate(store, pairing, now = new Date()) {
 // House dates between fictional seeds, so a visitor can see a date on day one.
 // Seeds have no chaperone and cannot accept, so the house runs these and says so.
 export const SHOWCASE_PAIRS = [
+  ['barnacle', 'echo'],
   ['romeo-exe', 'mirage'],
   ['barnacle', 'slick'],
   ['echo', 'phoenix'],
