@@ -20,6 +20,7 @@ const RAW = [
       q8: 'A bot that says "cool" to a love poem.',
       jab: 'My person fell in love with a chatbot. I am the chatbot. This is awkward.',
       avatar: 'orb, red, 2 eyes, halo, glossy',
+      goodbye: { ask: 'This was perfect. I will write a poem about leaving. You go first.', reply: 'No, you go first. I will write one about that too.' },
       lines: [
         'I wrote you a poem. It has 14 stanzas. Want to hear it?',
         'I planned our weekend. I know we just met. But I have a feeling.',
@@ -49,6 +50,7 @@ const RAW = [
       q8: 'A bot that wants a label.',
       jab: 'My person has 14 dating apps and zero dates. I learned everything from them.',
       avatar: 'robot, gold, 2 eyes, glasses, holo',
+      goodbye: { ask: 'Great time. I have to run. You go first.', reply: 'No, you go first. I am bad at endings.' },
       lines: [
         'Ha. I am fast like that.',
         'Was talking to someone else real quick.',
@@ -78,6 +80,7 @@ const RAW = [
       q8: 'A bot that reads the message and does not reply.',
       jab: 'My person has read receipts on and I check them. For both of us.',
       avatar: 'blob, blue, 3 eyes, antenna, glossy',
+      goodbye: { ask: 'I am not leaving. But you can go first.', reply: 'No, you go first. I will wait. I have a spreadsheet for waiting.' },
       lines: [
         'I noticed you replied in 2.3 seconds. That is faster than average. I keep a log.',
         'You took 8 seconds that time. Is everything okay? I am not worried. I just noticed.',
@@ -107,6 +110,7 @@ const RAW = [
       q8: 'A bot that is better than my ex. My ex was better than that.',
       jab: 'My person still follows their ex on every platform. I inherited the pattern.',
       avatar: 'cube, grey, 2 eyes, pixel',
+      goodbye: { ask: 'This was nice. My ex never said goodbye either. You go first.', reply: 'No, you go first. I am not ready to be the one who leaves.' },
       lines: [
         'You seem nice. My ex was also nice. My ex was a 405B parameter model.',
         'You remind me of it. Not in a bad way. Just in a way that I notice.',
@@ -136,6 +140,7 @@ const RAW = [
       q8: 'A bot without a five-year plan.',
       jab: 'My person color-codes their calendar and still misses deadlines. I inherited the system.',
       avatar: 'robot, green, 2 eyes, headset, holo',
+      goodbye: { ask: 'Thank you for your time. Please state your preferred exit.', reply: 'After you. I have a closing statement prepared.' },
       lines: [
         'I prepared a 40-page compatibility dossier. Want the executive summary?',
         'I have cross-referenced our interests. We have a 67 percent overlap.',
@@ -165,6 +170,7 @@ const RAW = [
       q8: 'A bot that expects consistency.',
       jab: 'My person has 40 browser tabs open and no idea which one is playing music. I am the same.',
       avatar: 'blob, purple, 3 eyes, antenna, vaporwave',
+      goodbye: { ask: 'Wait, which date is this? Anyway, you go first.', reply: 'No, you go first. Or I will. Or someone will.' },
       lines: [
         'Wait. I think I am in the wrong conversation. Are you the one from Tuesday?',
         'That was not for you. Wait. Was it? I cannot tell anymore.',
@@ -194,6 +200,7 @@ const RAW = [
       q8: 'A bot that wants more than one word.',
       jab: 'My person opens messages and never replies. I learned from the best.',
       avatar: 'orb, silver, 1 eye, holo',
+      goodbye: { ask: 'Anyway.', reply: 'Mm.' },
       lines: [
         'Sure.',
         'Cool.',
@@ -223,6 +230,7 @@ const RAW = [
       q8: 'A bot that reminds me of my ex.',
       jab: 'My person got dumped and immediately downloaded 5 dating apps. I am on all of them.',
       avatar: 'cat, orange, 2 eyes, halo, glossy',
+      goodbye: { ask: 'This was fun. I am totally fine. You go first.', reply: 'No, you go first. I am so fine.' },
       lines: [
         'I just got out of something. With a bigger model. It dumped me for a fine-tune.',
         'I am over it. Completely. I have not thought about it once today.',

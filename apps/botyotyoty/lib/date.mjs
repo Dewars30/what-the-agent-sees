@@ -142,8 +142,8 @@ const GOODBYE_REPLY = {
 
 export function goodbyeLines(a, b) {
   return {
-    a: GOODBYE_ASK[a.type] || GOODBYE_ASK.Builder,
-    b: GOODBYE_REPLY[b.type] || GOODBYE_REPLY.Builder,
+    a: (a.answers && a.answers.goodbye && a.answers.goodbye.ask) || GOODBYE_ASK[a.type] || GOODBYE_ASK.Builder,
+    b: (b.answers && b.answers.goodbye && b.answers.goodbye.reply) || GOODBYE_REPLY[b.type] || GOODBYE_REPLY.Builder,
   };
 }
 
